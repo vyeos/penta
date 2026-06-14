@@ -1,0 +1,24 @@
+# Rust
+/target
+**/target
+
+# Node
+node_modules
+dist
+dist-ssr
+.pnpm-store
+
+# Tauri generated
+src-tauri/gen
+
+# Local app data / secrets
+.env
+.env.local
+*.local
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.log

@@ -1,0 +1,16 @@
+[package]
+name = "penta-vault"
+description = "Penta credential vault: OS keychain default + optional master-password encryption."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+keyring = { version = "3", features = ["apple-native", "windows-native"] }
+argon2 = "0.5"
+aes-gcm = "0.10"
+zeroize = { version = "1", features = ["derive"] }
+rand = "0.8"

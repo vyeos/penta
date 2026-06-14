@@ -1,0 +1,40 @@
+[package]
+name = "penta-core"
+description = "Penta core: introspection, query execution, data-grid and DDL services."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-postgres = { version = "0.7", features = [
+    "with-chrono-0_4",
+    "with-uuid-1",
+    "with-serde_json-1",
+] }
+futures-util = "0.3"
+bytes = "1"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+uuid = { version = "1", features = ["v4"] }
+rust_decimal = { version = "1", features = ["db-tokio-postgres"] }
+deadpool-postgres = "0.14"
+# Production Safety Mode: pure-Rust SQL parser for risk detection + statement
+# splitting (Decision #10 — no C-native build pain).
+sqlparser = "0.52"
+# AI v1: HTTPS to cloud providers + local Ollama. rustls keeps us off OpenSSL.
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "rustls-tls",
+    "stream",
+] }
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio",
+    "sqlite",
+    "migrate",
+    "macros",
+] }
+penta-vault = { path = "../penta-vault" }

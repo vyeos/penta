@@ -1,0 +1,18 @@
+[package]
+name = "penta-license"
+description = "Penta open-core licensing: offline Pro license verification + feature entitlements."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+# Enables the vendor-side license signer (`sign`, `public_key_for`). Used by the
+# private release tooling; never enabled in the shipped app.
+vendor = []
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+ed25519-dalek = "2"
+base64 = "0.22"

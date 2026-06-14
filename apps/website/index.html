@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Penta, the PostgreSQL workbench that won't kill prod</title>
+    <meta
+      name="description"
+      content="All of pgAdmin's depth, with the speed of a tool built this decade and a safety net it never had. Schema-aware autocomplete, safe data editing, and a privacy-first AI copilot that never runs your SQL for you."
+    />
+    <meta name="theme-color" content="#ECEBE4" />
+
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <!-- Clash Display + Switzer via Fontshare. TODO: self-host woff2 for production per build policy. -->
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=switzer@400,500,600,700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      // Resolve theme before first paint to avoid a flash of the wrong mode.
+      try {
+        var t = localStorage.getItem("penta-theme");
+        if (t !== "light" && t !== "dark") {
+          t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

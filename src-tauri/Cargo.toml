@@ -1,0 +1,30 @@
+[package]
+name = "penta"
+description = "Penta — a modern PostgreSQL workbench."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+default-run = "penta"
+
+# The thin Tauri shell exposes a library (so mobile/tests can call `run`) plus a
+# binary. Heavy logic lives in penta-core / penta-vault.
+[lib]
+name = "penta_lib"
+crate-type = ["lib"]
+
+[[bin]]
+name = "penta"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde.workspace = true
+serde_json.workspace = true
+penta-core = { path = "../crates/penta-core" }
+penta-vault = { path = "../crates/penta-vault" }
+penta-license = { path = "../crates/penta-license" }

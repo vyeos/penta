@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Neo-brutalist token system. ONE accent (safety orange) that doubles as the
+  brand color and the semantic "danger / production" warning. Dual light + dark,
+  swapped via [data-theme] on <html>. No glows, no gradients, sharp corners,
+  hard offset shadows.
+*/
+:root {
+  --paper: #eceae2;
+  --ink: #161510;
+  --accent: #ff4a14;
+  --accent-ink: #161510;
+  --muted: #6b6b62;
+  --surface: #e2e0d6;
+  --line: #161510;
+  --shadow: #161510;
+}
+
+[data-theme="dark"] {
+  --paper: #0e0d0b;
+  --ink: #ece9e1;
+  --accent: #ff5a28;
+  --accent-ink: #0e0d0b;
+  --muted: #8e8b80;
+  --surface: #17150f;
+  --line: #ece9e1;
+  --shadow: #ff5a28;
+}
+
+@layer base {
+  * {
+    border-color: var(--line);
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Switzer", system-ui, -apple-system, sans-serif;
+    font-feature-settings: "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  h1, h2, h3 {
+    font-family: "Clash Display", "Switzer", system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .shadow-brut {
+    box-shadow: 5px 5px 0 0 var(--shadow);
+  }
+  .shadow-brut-sm {
+    box-shadow: 3px 3px 0 0 var(--shadow);
+  }
+  .shadow-brut-lg {
+    box-shadow: 8px 8px 0 0 var(--shadow);
+  }
+  /* press: hard-shadow buttons/blocks that physically depress on interaction */
+  .press {
+    transition: box-shadow 0.16s ease, transform 0.16s ease, background 0.16s ease, color 0.16s ease;
+  }
+  .press:not(:disabled):hover {
+    transform: translate(2px, 2px);
+    box-shadow: 3px 3px 0 0 var(--shadow);
+  }
+  .press:not(:disabled):active {
+    transform: translate(5px, 5px);
+    box-shadow: 0 0 0 0 var(--shadow);
+  }
+  /* hazard stripes for the marquee band */
+  .hazard {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--accent) 0 18px,
+      transparent 18px 38px
+    );
+  }
+  .marquee-track {
+    animation: marquee 38s linear infinite;
+  }
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .press:not(:disabled):hover {
+    transform: none;
+  }
+}

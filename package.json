@@ -1,0 +1,22 @@
+{
+  "name": "penta",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Penta — a modern PostgreSQL workbench (Tauri + React + Rust).",
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "desktop:dev": "pnpm --filter @penta/desktop dev",
+    "desktop:build": "pnpm --filter @penta/desktop build",
+    "tauri": "tauri",
+    "check": "cargo check --workspace",
+    "test": "cargo test --workspace",
+    "fmt": "cargo fmt --all && pnpm --filter @penta/desktop exec prettier --write .",
+    "lint": "cargo clippy --workspace --all-targets"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  },
+  "packageManager": "pnpm@11.1.3"
+}

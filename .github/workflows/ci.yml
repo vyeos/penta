@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Lint + unit-test the portable core crates and build the frontend on all 3 OSes.
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Rust format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (core crates)
+        run: cargo clippy -p penta-core -p penta-vault --all-targets -- -D warnings
+
+      - name: Rust tests (core crates, DB-free)
+        run: cargo test -p penta-core -p penta-vault
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install JS deps
+        run: pnpm install
+
+      - name: Build frontend
+        run: pnpm --filter @penta/desktop build
+
+  # The hard MVP launch gate: the data-edit + introspection + query suites must be
+  # green against a real PostgreSQL. Every PR is gated on PG 16; a nightly job can
+  # fan this out across the 13–17 matrix.
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: penta
+          POSTGRES_PASSWORD: penta
+          POSTGRES_DB: penta_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U penta"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PENTA_TEST_PG_URL: postgres://penta:penta@127.0.0.1:5432/penta_dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Integration tests (vs live PostgreSQL)
+        run: cargo test -p penta-core --tests
+
+  # Build the Tauri desktop shell so packaging regressions are caught early.
+  # Signing/notarization happen in the release pipeline (needs secrets), not here.
+  desktop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Tauri system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf libgtk-3-dev
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install JS deps
+        run: pnpm install
+      - name: Build desktop shell
+        run: cargo build -p penta
