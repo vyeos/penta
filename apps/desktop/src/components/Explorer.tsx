@@ -3,6 +3,7 @@ import { ChevronRight, Table2, Eye, Boxes } from "lucide-react";
 import { api, errMessage, type RelationInfo, type SchemaInfo } from "@/lib/api";
 import { useStore } from "@/store";
 import { cn } from "@/lib/utils";
+import { sectionLabelCls } from "@/components/ui";
 
 const TABLE_KINDS = ["r", "p"];
 const VIEW_KINDS = ["v", "m"];
@@ -66,19 +67,13 @@ export function Explorer() {
   }
 
   if (!session) {
-    return (
-      <p className="px-1 text-xs text-muted-foreground">
-        Connect to a server to browse its objects.
-      </p>
-    );
+    return <p className="px-1 text-xs text-muted">Connect to a server to browse its objects.</p>;
   }
 
   return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {session.name}
-      </p>
-      {err && <p className="px-1 text-xs text-red-400">{err}</p>}
+    <div className="space-y-1.5">
+      <p className={sectionLabelCls}>{session.name}</p>
+      {err && <p className="px-1 font-mono text-[11px] text-accent">{err}</p>}
       <ul className="space-y-0.5">
         {schemas.map((s) => {
           const items = rels[s.name] ?? [];
@@ -88,19 +83,19 @@ export function Explorer() {
             <li key={s.name}>
               <button
                 onClick={() => toggle(s.name)}
-                className="flex w-full items-center gap-1 rounded-md px-1 py-1 text-sm hover:bg-muted"
+                className="flex w-full items-center gap-1.5 px-1.5 py-1 text-sm transition-colors hover:bg-ink/[0.05]"
               >
                 <ChevronRight
                   className={cn(
-                    "h-3.5 w-3.5 shrink-0 transition-transform",
-                    expanded[s.name] && "rotate-90",
+                    "h-3.5 w-3.5 shrink-0 text-muted/70 transition-transform",
+                    expanded[s.name] && "rotate-90 text-accent",
                   )}
                 />
-                <Boxes className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <Boxes className="h-3.5 w-3.5 shrink-0 text-muted/70" />
                 <span className="truncate">{s.name}</span>
               </button>
               {expanded[s.name] && (
-                <ul className="ml-4 space-y-0.5 border-l pl-2">
+                <ul className="ml-[14px] space-y-0.5 border-l border-ink/[0.08] pl-2.5">
                   <Group icon={<Table2 className="h-3.5 w-3.5" />} items={tables} onOpen={openRelation} empty="no tables" />
                   <Group icon={<Eye className="h-3.5 w-3.5" />} items={views} onOpen={openRelation} empty="no views" />
                 </ul>
@@ -125,7 +120,7 @@ function Group({
   empty: string;
 }) {
   if (items.length === 0) {
-    return <li className="px-1 py-0.5 text-[11px] text-muted-foreground">{empty}</li>;
+    return <li className="px-1.5 py-0.5 text-[11px] text-muted/60">{empty}</li>;
   }
   return (
     <>
@@ -135,9 +130,9 @@ function Group({
             onClick={() => onOpen(r, false)}
             onDoubleClick={() => onOpen(r, true)}
             title={r.comment ?? undefined}
-            className="flex w-full items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-[13px] hover:bg-muted"
+            className="flex w-full items-center gap-1.5 px-1.5 py-1 text-left text-[13px] transition-colors hover:bg-ink/[0.05]"
           >
-            <span className="shrink-0 text-muted-foreground">{icon}</span>
+            <span className="shrink-0 text-muted/70">{icon}</span>
             <span className="truncate">{r.name}</span>
           </button>
         </li>

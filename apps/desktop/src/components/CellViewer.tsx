@@ -1,4 +1,7 @@
 import { useMemo } from "react";
+import { X } from "lucide-react";
+import { Button, overlayCls, modalCls } from "@/components/ui";
+import { cn } from "@/lib/utils";
 
 /** Expanded view of a single cell value — pretty-prints JSON, scrolls long text. */
 export function CellViewer({
@@ -28,23 +31,22 @@ export function CellViewer({
   }
 
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50 p-6" onClick={onClose}>
-      <div
-        className="flex max-h-[80%] w-[600px] flex-col rounded-lg border bg-card shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-2 border-b px-3 py-2">
-          <span className="font-mono text-sm font-medium">{column}</span>
-          {value === null && <span className="text-xs italic text-muted-foreground">NULL</span>}
-          <button onClick={copy} className="ml-auto text-xs text-muted-foreground hover:text-foreground">
-            copy
-          </button>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            ✕
+    <div className={overlayCls} onClick={onClose}>
+      <div className={cn(modalCls, "max-h-[80%] w-[600px]")} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b border-ink/[0.08] px-3 py-2.5">
+          <span className="font-mono text-sm font-semibold">{column}</span>
+          {value === null && (
+            <span className="font-mono text-[11px] italic text-muted">NULL</span>
+          )}
+          <Button variant="ghost" size="xs" onClick={copy} className="ml-auto">
+            Copy
+          </Button>
+          <button onClick={onClose} className="text-muted transition-colors hover:text-ink">
+            <X className="h-4 w-4" />
           </button>
         </div>
         <pre className="flex-1 overflow-auto whitespace-pre-wrap break-words p-3 font-mono text-xs">
-          {pretty ?? <span className="italic text-muted-foreground">NULL</span>}
+          {pretty ?? <span className="italic text-muted">NULL</span>}
         </pre>
       </div>
     </div>

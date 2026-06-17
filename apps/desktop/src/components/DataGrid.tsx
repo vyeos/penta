@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plus, RotateCcw, Save, Eye, RefreshCw, Trash2, Undo2, X, Download, Upload } from "lucide-react";
+import { Plus, RotateCcw, Save, Eye, RefreshCw, Trash2, Undo2, X, Download, Upload, KeyRound } from "lucide-react";
 import {
   api,
   errMessage,
@@ -12,6 +12,7 @@ import {
 import { useStore } from "@/store";
 import { cn } from "@/lib/utils";
 import { exportTableToCsv, importCsvIntoTable } from "@/lib/csv";
+import { Button, Badge, overlayCls, modalCls } from "@/components/ui";
 
 /** A draft cell can be unset (use DB default), explicit NULL, or a text value. */
 type DraftValue = string | null | undefined;
@@ -238,22 +239,22 @@ export function DataGrid({ schema, table }: { schema: string; table: string }) {
           <Empty text="Loading…" />
         ) : (
           <table className="w-full border-collapse text-xs">
-            <thead className="sticky top-0 z-10 bg-card">
+            <thead className="sticky top-0 z-10 bg-paper">
               <tr>
-                <th className="w-10 border-b border-r px-1 py-1" />
+                <th className="w-10 border-b border-ink/[0.1] px-1 py-2" />
                 {columns.map((c) => (
                   <th
                     key={c.name}
-                    className="border-b border-r px-2 py-1 text-left font-medium"
+                    className="border-b border-ink/[0.1] px-3 py-2 text-left font-mono text-[11px] font-semibold text-muted"
                     title={c.type_name}
                   >
-                    {c.name}
-                    {data?.key_columns.includes(c.name) && (
-                      <span className="ml-1 text-amber-400" title="key column">
-                        🔑
-                      </span>
-                    )}
-                    <span className="ml-1 font-normal text-muted-foreground">{c.type_name}</span>
+                    <span className="inline-flex items-center gap-1">
+                      {c.name}
+                      {data?.key_columns.includes(c.name) && (
+                        <KeyRound className="h-3 w-3 text-accent" aria-label="key column" />
+                      )}
+                    </span>
+                    <span className="ml-1.5 font-normal text-muted/60">{c.type_name}</span>
                   </th>
                 ))}
               </tr>
@@ -262,8 +263,14 @@ export function DataGrid({ schema, table }: { schema: string; table: string }) {
               {(data?.rows ?? []).map((_row, idx) => {
                 const deleted = !!deletes[idx];
                 return (
-                  <tr key={idx} className={cn("hover:bg-muted/40", deleted && "opacity-50")}>
-                    <td className="border-b border-r px-1 py-0.5 text-center">
+                  <tr
+                    key={idx}
+                    className={cn(
+                      "transition-colors hover:bg-ink/[0.03]",
+                      deleted && "bg-accent/[0.08] opacity-50",
+                    )}
+                  >
+                    <td className="border-b border-ink/[0.05] px-1 py-1 text-center">
                       {editable ? (
                         <button
                           title={deleted ? "Undo delete" : "Delete row"}
@@ -275,16 +282,12 @@ export function DataGrid({ schema, table }: { schema: string; table: string }) {
                               return next;
                             })
                           }
-                          className="text-muted-foreground hover:text-red-400"
+                          className="text-muted/60 transition-colors hover:text-accent"
                         >
-                          {deleted ? (
-                            <Undo2 className="h-3.5 w-3.5" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
+                          {deleted ? <Undo2 className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
                         </button>
                       ) : (
-                        <span className="text-muted-foreground">{idx + 1}</span>
+                        <span className="font-mono text-muted/50">{idx + 1}</span>
                       )}
                     </td>
                     {columns.map((c) => {
@@ -312,12 +315,12 @@ export function DataGrid({ schema, table }: { schema: string; table: string }) {
 
               {/* Draft (insert) rows */}
               {inserts.map((draft, di) => (
-                <tr key={`ins:${di}`} className="bg-emerald-500/5">
-                  <td className="border-b border-r px-1 py-0.5 text-center">
+                <tr key={`ins:${di}`} className="bg-ok/[0.08]">
+                  <td className="border-b border-ink/[0.05] px-1 py-1 text-center">
                     <button
                       title="Discard new row"
                       onClick={() => setInserts((r) => r.filter((_, i) => i !== di))}
-                      className="text-muted-foreground hover:text-red-400"
+                      className="text-muted/60 transition-colors hover:text-accent"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -378,83 +381,56 @@ function Toolbar(props: {
   onImport: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b px-2 py-1.5 text-xs">
-      <span className="font-medium">
+    <div className="flex flex-wrap items-center gap-2 border-b border-ink/[0.07] px-2.5 py-2 text-xs">
+      <span className="font-mono text-[12px] font-semibold">
         {props.schema}.{props.table}
       </span>
       {props.editable ? (
-        <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[11px] text-emerald-400">
-          editable
-        </span>
+        <Badge tone="ok">Editable</Badge>
       ) : (
-        <span
-          className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-amber-400"
-          title={props.readonlyReason ?? undefined}
-        >
-          read-only{props.readonlyReason ? ` · ${props.readonlyReason}` : ""}
-        </span>
+        <Badge tone="warn" title={props.readonlyReason ?? undefined}>
+          Read-only{props.readonlyReason ? ` · ${props.readonlyReason}` : ""}
+        </Badge>
       )}
 
       {props.editable && (
         <>
-          <button
-            onClick={props.onAddRow}
-            className="flex items-center gap-1 rounded-md border bg-muted px-2 py-1 hover:text-foreground"
-          >
+          <Button variant="ghost" size="sm" onClick={props.onAddRow}>
             <Plus className="h-3 w-3" /> Add row
-          </button>
-          <button
-            disabled={props.dirtyCount === 0}
-            onClick={props.onRevert}
-            className="flex items-center gap-1 rounded-md border bg-muted px-2 py-1 disabled:opacity-40"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" disabled={props.dirtyCount === 0} onClick={props.onRevert}>
             <RotateCcw className="h-3 w-3" /> Revert
-          </button>
-          <button
-            disabled={props.dirtyCount === 0}
-            onClick={props.onPreview}
-            className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 font-medium text-primary-foreground disabled:opacity-40"
-          >
+          </Button>
+          <Button variant="solid" size="sm" disabled={props.dirtyCount === 0} onClick={props.onPreview}>
             <Eye className="h-3 w-3" /> Preview &amp; Save
             {props.dirtyCount > 0 && (
-              <span className="ml-0.5 rounded bg-primary-foreground/20 px-1">
-                {props.dirtyCount}
-              </span>
+              <span className="ml-0.5 bg-paper/20 px-1 font-mono">{props.dirtyCount}</span>
             )}
-          </button>
+          </Button>
         </>
       )}
 
-      <div className="ml-auto flex items-center gap-2 text-muted-foreground">
+      <div className="ml-auto flex items-center gap-2 font-mono text-[11px] text-muted">
         <span>
           {props.rowCount} rows{props.truncated ? " (page)" : ""}
         </span>
-        <button
-          onClick={props.onExport}
-          disabled={props.busy}
-          title="Export table to CSV"
-          className="flex items-center gap-1 rounded-md border bg-muted px-2 py-1 disabled:opacity-40"
-        >
+        <Button variant="ghost" size="sm" onClick={props.onExport} disabled={props.busy} title="Export table to CSV">
           <Download className="h-3 w-3" /> Export
-        </button>
+        </Button>
         {props.editable && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={props.onImport}
             disabled={props.busy}
             title="Import CSV into this table"
-            className="flex items-center gap-1 rounded-md border bg-muted px-2 py-1 disabled:opacity-40"
           >
             <Upload className="h-3 w-3" /> Import
-          </button>
+          </Button>
         )}
-        <button
-          onClick={props.onRefresh}
-          disabled={props.busy}
-          title="Refresh"
-          className="rounded-md border bg-muted p-1 disabled:opacity-40"
-        >
+        <Button variant="ghost" size="icon" onClick={props.onRefresh} disabled={props.busy} title="Refresh">
           <RefreshCw className={cn("h-3 w-3", props.busy && "animate-spin")} />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -471,7 +447,7 @@ function Cell(props: {
 }) {
   if (props.editing) {
     return (
-      <td className="border-b border-r p-0">
+      <td className="border-b border-ink/[0.05] p-0">
         <CellEditor value={props.value} onCommit={props.onCommit} onCancel={props.onCancel} />
       </td>
     );
@@ -480,13 +456,13 @@ function Cell(props: {
     <td
       onClick={props.editable ? props.onStartEdit : undefined}
       className={cn(
-        "max-w-[28rem] truncate border-b border-r px-2 py-1 font-mono",
+        "max-w-[28rem] truncate border-b border-ink/[0.05] px-3 py-1.5 font-mono",
         props.editable && "cursor-text",
-        props.dirty && "bg-amber-500/15",
+        props.dirty && "bg-warn/[0.16]",
       )}
       title={props.value ?? "NULL"}
     >
-      {props.value === null ? <span className="italic text-muted-foreground">NULL</span> : props.value}
+      {props.value === null ? <span className="italic text-muted/60">NULL</span> : props.value}
     </td>
   );
 }
@@ -500,24 +476,20 @@ function DraftCell(props: {
 }) {
   if (props.editing) {
     return (
-      <td className="border-b border-r p-0">
-        <CellEditor
-          value={props.value ?? null}
-          onCommit={props.onCommit}
-          onCancel={props.onCancel}
-        />
+      <td className="border-b border-ink/[0.05] p-0">
+        <CellEditor value={props.value ?? null} onCommit={props.onCommit} onCancel={props.onCancel} />
       </td>
     );
   }
   return (
     <td
       onClick={props.onStartEdit}
-      className="max-w-[28rem] cursor-text truncate border-b border-r px-2 py-1 font-mono"
+      className="max-w-[28rem] cursor-text truncate border-b border-ink/[0.05] px-3 py-1.5 font-mono"
     >
       {props.value === undefined ? (
-        <span className="italic text-muted-foreground/60">default</span>
+        <span className="italic text-muted/50">default</span>
       ) : props.value === null ? (
-        <span className="italic text-muted-foreground">NULL</span>
+        <span className="italic text-muted/60">NULL</span>
       ) : (
         props.value
       )}
@@ -532,7 +504,7 @@ function CellEditor(props: {
 }) {
   const [text, setText] = useState(props.value ?? "");
   return (
-    <div className="flex items-center gap-1 bg-background px-1 py-0.5">
+    <div className="flex items-center gap-1 px-1 py-0.5">
       <input
         autoFocus
         value={text}
@@ -542,7 +514,7 @@ function CellEditor(props: {
           if (e.key === "Escape") props.onCancel();
         }}
         onBlur={() => props.onCommit(text)}
-        className="w-full min-w-[6rem] rounded border bg-card px-1 py-0.5 font-mono text-xs outline-none focus:ring-1 focus:ring-primary"
+        className="w-full min-w-[6rem] border border-accent/70 bg-paper px-1.5 py-1 font-mono text-xs outline-none ring-1 ring-accent/25"
       />
       <button
         title="Set NULL"
@@ -551,7 +523,7 @@ function CellEditor(props: {
           e.preventDefault();
           props.onCommit(null);
         }}
-        className="rounded border px-1 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+        className="bg-ink/[0.06] px-1.5 py-1 font-mono text-[10px] text-muted transition-colors hover:bg-ink/[0.12] hover:text-ink"
       >
         ∅
       </button>
@@ -566,28 +538,28 @@ function PreviewDialog(props: {
   onClose: () => void;
 }) {
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 p-6">
-      <div className="flex max-h-full w-full max-w-3xl flex-col rounded-lg border bg-card shadow-xl">
-        <div className="flex items-center justify-between border-b px-4 py-2">
+    <div className={overlayCls}>
+      <div className={cn(modalCls, "max-h-full w-full max-w-3xl")}>
+        <div className="flex items-center justify-between border-b border-ink/[0.08] px-4 py-3">
           <h2 className="text-sm font-semibold">
             SQL preview · {props.statements.length} statement
             {props.statements.length === 1 ? "" : "s"}
           </h2>
-          <button onClick={props.onClose} className="text-muted-foreground hover:text-foreground">
+          <button onClick={props.onClose} className="text-muted transition-colors hover:text-ink">
             <X className="h-4 w-4" />
           </button>
         </div>
         <div className="flex-1 space-y-3 overflow-auto p-4">
           {props.statements.length === 0 && (
-            <p className="text-xs text-muted-foreground">No changes to apply.</p>
+            <p className="text-xs text-muted">No changes to apply.</p>
           )}
           {props.statements.map((s, i) => (
-            <div key={i} className="rounded-md border">
-              <pre className="overflow-auto whitespace-pre-wrap break-words p-2 font-mono text-xs">
+            <div key={i} className="overflow-hidden bg-ink/[0.04]">
+              <pre className="overflow-auto whitespace-pre-wrap break-words p-3 font-mono text-xs">
                 {s.sql}
               </pre>
               {s.params.length > 0 && (
-                <div className="border-t px-2 py-1 text-[11px] text-muted-foreground">
+                <div className="border-t border-ink/[0.07] px-3 py-1.5 font-mono text-[11px] text-muted">
                   params:{" "}
                   {s.params
                     .map((p, j) => `$${j + 1}=${p === null ? "NULL" : JSON.stringify(p)}`)
@@ -597,20 +569,21 @@ function PreviewDialog(props: {
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-end gap-2 border-t px-4 py-2">
-          <p className="mr-auto text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-end gap-2 border-t border-ink/[0.08] px-4 py-3">
+          <p className="mr-auto text-[11px] text-muted">
             Runs in one transaction; any conflict or error rolls back everything.
           </p>
-          <button onClick={props.onClose} className="rounded-md border bg-muted px-3 py-1 text-xs">
+          <Button variant="ghost" size="sm" onClick={props.onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="solid"
+            size="sm"
             disabled={props.applying || props.statements.length === 0}
             onClick={props.onApply}
-            className="flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
           >
             <Save className="h-3 w-3" /> {props.applying ? "Applying…" : "Apply"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -621,10 +594,8 @@ function Banner({ kind, children }: { kind: "error" | "info"; children: React.Re
   return (
     <div
       className={cn(
-        "border-b px-3 py-1.5 text-xs",
-        kind === "error"
-          ? "border-red-500/30 bg-red-500/10 text-red-300"
-          : "border-sky-500/30 bg-sky-500/10 text-sky-300",
+        "border-b border-ink/[0.07] px-3 py-2 font-mono text-[11px]",
+        kind === "error" ? "bg-accent/[0.08] text-ink" : "bg-ink/[0.03] text-muted",
       )}
     >
       {children}
@@ -633,9 +604,5 @@ function Banner({ kind, children }: { kind: "error" | "info"; children: React.Re
 }
 
 function Empty({ text }: { text: string }) {
-  return (
-    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-      {text}
-    </div>
-  );
+  return <div className="flex h-full items-center justify-center text-sm text-muted">{text}</div>;
 }

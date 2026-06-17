@@ -2,43 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Penta desktop — brand tokens shared with the marketing site (apps/website), but
+  the chrome is tuned calm/Linear-like rather than brutalist: separation comes
+  from subtle background elevation + whitespace, not hard borders. ONE accent
+  (safety orange) doubles as the brand color and the "danger / production"
+  semantic; warn/ok carry the workbench's risk + status signals. Tokens are
+  channel triples so Tailwind opacity modifiers work. Light + dark via
+  [data-theme] on <html>.
+*/
 :root {
-  --radius: 0.625rem;
+  --paper: 237 235 227; /* warm off-white canvas */
+  --ink: 28 27 22; /* near-black text */
+  --accent: 255 74 20; /* safety orange */
+  --accent-ink: 255 248 244;
+  --muted: 124 122 112; /* secondary text */
+  --surface: 230 228 219; /* faint elevated panels */
+  --line: 28 27 22;
+  --warn: 154 107 0;
+  --ok: 47 111 67;
 }
 
-/* Dark-first theme tokens (Penta default). Light theme tokens land later. */
-.dark {
-  --background: 222 24% 6%;
-  --foreground: 210 20% 96%;
-  --card: 222 22% 9%;
-  --card-foreground: 210 20% 96%;
-  --primary: 199 89% 56%;
-  --primary-foreground: 222 47% 8%;
-  --muted: 217 19% 15%;
-  --muted-foreground: 215 16% 62%;
-  --border: 217 19% 18%;
-  --input: 217 19% 18%;
-  --ring: 199 89% 56%;
-  --destructive: 0 72% 55%;
-  --destructive-foreground: 210 20% 98%;
+[data-theme="dark"] {
+  --paper: 16 16 18; /* near-black canvas */
+  --ink: 233 231 226; /* off-white text */
+  --accent: 255 99 51;
+  --accent-ink: 22 16 12;
+  --muted: 140 139 132;
+  --surface: 26 26 29; /* faint elevated panels */
+  --line: 233 231 226;
+  --warn: 224 179 65;
+  --ok: 121 198 148;
 }
 
-* {
-  border-color: hsl(var(--border));
+@layer base {
+  /* Bare `border*` utilities resolve to a faint hairline, not a hard slab. */
+  * {
+    border-color: rgb(var(--line) / 0.09);
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: rgb(var(--paper));
+    color: rgb(var(--ink));
+    font-family: "Switzer", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-feature-settings: "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: rgb(var(--accent) / 0.85);
+    color: rgb(var(--accent-ink));
+  }
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent) / 0.7);
+    outline-offset: 1px;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: "Clash Display", "Switzer", system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  /* Calm custom scrollbars so overflow areas don't add visual noise. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--ink) / 0.18) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--ink) / 0.16);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--ink) / 0.28);
+    background-clip: padding-box;
+  }
 }
 
-html,
-body,
-#root {
-  height: 100%;
+@layer utilities {
+  /* Soft elevation for menus, popovers, and dialogs (Linear-like). */
+  .shadow-soft {
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.05),
+      0 2px 6px rgb(0 0 0 / 0.06);
+  }
+  .shadow-pop {
+    box-shadow:
+      0 10px 30px rgb(0 0 0 / 0.18),
+      0 2px 8px rgb(0 0 0 / 0.1);
+  }
+  /* hazard stripes, reserved for the high-risk confirm dialog only. */
+  .hazard {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      rgb(var(--accent)) 0 9px,
+      transparent 9px 20px
+    );
+  }
 }
 
-body {
-  margin: 0;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+/* CodeMirror inherits the canvas; the full theme lives in lib/editorTheme.ts. */
+.cm-editor {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

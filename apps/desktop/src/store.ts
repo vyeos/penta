@@ -14,7 +14,19 @@ export type MainView =
   | { kind: "query" }
   | { kind: "data"; schema: string; table: string };
 
+export type Theme = "light" | "dark";
+
+function initialTheme(): Theme {
+  return document.documentElement.getAttribute("data-theme") === "dark"
+    ? "dark"
+    : "light";
+}
+
 interface AppStore {
+  /** Light/dark, mirrored to <html data-theme> + localStorage["penta-theme"]. */
+  theme: Theme;
+  toggleTheme: () => void;
+
   session: ActiveSession | null;
   setSession: (s: ActiveSession | null) => void;
 
@@ -33,6 +45,18 @@ interface AppStore {
 }
 
 export const useStore = create<AppStore>((set) => ({
+  theme: initialTheme(),
+  toggleTheme: () =>
+    set((s) => {
+      const next: Theme = s.theme === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      try {
+        localStorage.setItem("penta-theme", next);
+      } catch {
+        /* ignore */
+      }
+      return { theme: next };
+    }),
   session: null,
   setSession: (session) => set({ session, mainView: { kind: "query" } }),
   query: "SELECT 1;",

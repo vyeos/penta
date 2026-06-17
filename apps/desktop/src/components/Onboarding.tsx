@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Database, Search, Play, Pencil, Sparkles, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui";
+import { PentaMark } from "@/components/PentaMark";
 
 const ONBOARDED_KEY = "penta.onboarded";
 const TELEMETRY_KEY = "penta.telemetry";
@@ -32,59 +34,59 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 p-6">
-      <div className="w-[520px] rounded-xl border bg-card p-6 shadow-2xl">
-        <div className="mb-1 flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-primary" />
-          <h1 className="text-lg font-semibold tracking-tight">Welcome to Penta</h1>
-        </div>
-        <p className="mb-4 text-sm text-muted-foreground">
-          A fast, safe, AI-assisted PostgreSQL workbench. Here's the loop:
-        </p>
+    <div className="absolute inset-0 z-40 flex items-center justify-center bg-ink/50 p-6 backdrop-blur-[2px]">
+      <div className="w-[540px] overflow-hidden border border-ink/10 bg-paper shadow-pop">
+        <div className="p-6">
+          <div className="mb-1.5 flex items-center gap-2.5">
+            <PentaMark className="h-7 w-7 text-ink" />
+            <h1 className="font-display text-2xl">Welcome to Penta</h1>
+          </div>
+          <p className="mb-5 text-sm text-muted">
+            A fast, safe, AI-assisted PostgreSQL workbench. Here's the loop:
+          </p>
 
-        <ol className="mb-5 space-y-2">
-          {STEPS.map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <li key={i} className="flex items-center gap-3 rounded-md border bg-background/50 px-3 py-2">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                  <Icon className="h-4 w-4" />
-                </span>
-                <div>
-                  <div className="text-sm font-medium">{s.label}</div>
-                  <div className="text-[11px] text-muted-foreground">{s.hint}</div>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+          <ol className="mb-5 space-y-1.5">
+            {STEPS.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <li key={i} className="flex items-center gap-3 bg-ink/[0.03] px-3 py-2.5">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center bg-ink/[0.06] font-mono text-[11px] text-muted">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <Icon className="h-4 w-4 shrink-0 text-accent" />
+                  <div>
+                    <div className="text-sm font-medium">{s.label}</div>
+                    <div className="text-[12px] text-muted">{s.hint}</div>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
 
-        <label className="mb-4 flex items-start gap-2 rounded-md border bg-background/50 px-3 py-2 text-xs">
-          <input
-            type="checkbox"
-            checked={telemetry}
-            onChange={(e) => setTelemetry(e.target.checked)}
-            className="mt-0.5"
-          />
-          <span className="flex-1">
-            <span className="flex items-center gap-1 font-medium">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-              Share anonymous usage &amp; crash data
+          <label className="mb-5 flex items-start gap-2.5 bg-ink/[0.03] px-3 py-2.5 text-xs">
+            <input
+              type="checkbox"
+              checked={telemetry}
+              onChange={(e) => setTelemetry(e.target.checked)}
+              className="mt-0.5 accent-accent"
+            />
+            <span className="flex-1">
+              <span className="flex items-center gap-1 font-medium">
+                <ShieldCheck className="h-3.5 w-3.5 text-ok" />
+                Share anonymous usage &amp; crash data
+              </span>
+              <span className="text-muted">
+                Off by default. Never your SQL, connections, credentials, or data. You can change this
+                any time.
+              </span>
             </span>
-            <span className="text-muted-foreground">
-              Off by default. Never your SQL, connections, credentials, or data. You can change this
-              any time.
-            </span>
-          </span>
-        </label>
+          </label>
 
-        <div className="flex justify-end">
-          <button
-            onClick={finish}
-            className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground"
-          >
-            Get started
-          </button>
+          <div className="flex justify-end">
+            <Button variant="solid" size="md" onClick={finish}>
+              Get started
+            </Button>
+          </div>
         </div>
       </div>
     </div>

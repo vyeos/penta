@@ -9,12 +9,13 @@ import {
   errMessage,
   type CompletionModel,
   type QueryResult,
-  type RiskLevel,
   type RiskReport,
 } from "@/lib/api";
 import { useStore } from "@/store";
 import { makeSqlCompletionSource } from "@/lib/autocomplete";
+import { pentaEditorTheme } from "@/lib/editorTheme";
 import { exportQueryToCsv } from "@/lib/csv";
+import { Button, Badge } from "@/components/ui";
 import { AiPanel } from "@/components/AiPanel";
 import { ConfirmRiskDialog } from "@/components/ConfirmRiskDialog";
 import { CellViewer } from "@/components/CellViewer";
@@ -26,6 +27,7 @@ export function QueryPanel() {
   const query = useStore((s) => s.query);
   const setQuery = useStore((s) => s.setQuery);
   const runNonce = useStore((s) => s.runNonce);
+  const theme = useStore((s) => s.theme);
 
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -131,50 +133,38 @@ export function QueryPanel() {
 
   const extensions = useMemo(
     () => [
+      pentaEditorTheme(theme === "dark"),
       sql({ dialect: PostgreSQL }),
       autocompletion({ override: [completionSource] }),
       keymap.of([{ key: "Mod-Enter", run: () => (runRef.current(), true) }]),
     ],
-    [completionSource],
+    [completionSource, theme],
   );
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b px-2 py-1.5">
-        <button
-          disabled={!session || running}
-          onClick={run}
-          className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
-        >
+      <div className="flex items-center gap-2 px-2.5 py-2">
+        <Button variant="solid" size="sm" disabled={!session || running} onClick={run}>
           <Play className="h-3 w-3" /> Run
-          <kbd className="ml-1 opacity-70">⌘↵</kbd>
-        </button>
-        <button
-          disabled={!running}
-          onClick={cancel}
-          className="flex items-center gap-1 rounded-md border bg-muted px-2 py-1 text-xs disabled:opacity-50"
-        >
+          <kbd className="ml-0.5 font-mono text-[10px] opacity-60">⌘↵</kbd>
+        </Button>
+        <Button variant="ghost" size="sm" disabled={!running} onClick={cancel}>
           <Square className="h-3 w-3" /> Cancel
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           disabled={!result}
           onClick={exportCsv}
           title="Export result to CSV"
-          className="flex items-center gap-1 rounded-md border bg-muted px-2 py-1 text-xs disabled:opacity-50"
         >
           <Download className="h-3 w-3" /> CSV
-        </button>
+        </Button>
 
         <RiskBadge risk={risk} />
 
-        {session?.readOnly && (
-          <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-amber-400">read-only</span>
-        )}
-        {session?.envLabel === "production" && (
-          <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-[11px] text-red-400">
-            PRODUCTION
-          </span>
-        )}
+        {session?.readOnly && <Badge tone="warn">Read-only</Badge>}
+        {session?.envLabel === "production" && <Badge tone="danger">Production</Badge>}
 
         {session && (
           <AiPanel
@@ -185,8 +175,8 @@ export function QueryPanel() {
           />
         )}
 
-        <div className="ml-auto text-xs text-muted-foreground">
-          {notice && <span className="mr-2 text-emerald-400">{notice}</span>}
+        <div className="ml-auto font-mono text-[11px] text-muted">
+          {notice && <span className="mr-2 text-ok">{notice}</span>}
           {result &&
             `${result.row_count} rows · ${result.duration_ms} ms${
               result.truncated ? " · truncated" : ""
@@ -194,11 +184,11 @@ export function QueryPanel() {
         </div>
       </div>
 
-      <div className="min-h-[120px] border-b">
+      <div className="min-h-[120px] border-y border-ink/[0.07]">
         <CodeMirror
           value={query}
           height="180px"
-          theme="dark"
+          theme="none"
           extensions={extensions}
           onChange={setQuery}
           basicSetup={{ lineNumbers: true, foldGutter: false, autocompletion: false }}
@@ -207,13 +197,13 @@ export function QueryPanel() {
 
       <div className="flex-1 overflow-auto">
         {error && (
-          <pre className="m-2 whitespace-pre-wrap rounded-md border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-300">
+          <pre className="m-3 whitespace-pre-wrap bg-accent/[0.1] p-3 font-mono text-xs text-ink ring-1 ring-accent/20">
             {error}
           </pre>
         )}
         {result && !error && <ResultTable result={result} />}
         {!result && !error && (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+          <div className="flex h-full items-center justify-center text-sm text-muted">
             {session ? "Run a query to see results." : "Connect to begin."}
           </div>
         )}
@@ -237,23 +227,24 @@ function RiskBadge({ risk }: { risk: RiskReport | null }) {
   if (!risk || risk.level === "none" || risk.level === "low") {
     if (risk && risk.statement_count > 0) {
       return (
-        <span className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[11px] text-emerald-400">
-          <ShieldCheck className="h-3 w-3" /> safe
-        </span>
+        <Badge tone="ok">
+          <ShieldCheck className="h-3 w-3" /> Safe
+        </Badge>
       );
     }
     return null;
   }
-  const cfg: Record<Exclude<RiskLevel, "none" | "low">, { cls: string; label: string; icon: typeof ShieldAlert }> = {
-    medium: { cls: "bg-amber-500/15 text-amber-300", label: "schema change", icon: AlertTriangle },
-    high: { cls: "bg-red-500/15 text-red-300", label: "destructive", icon: ShieldAlert },
-  };
-  const c = cfg[risk.level as "medium" | "high"];
-  const Icon = c.icon;
+  if (risk.level === "medium") {
+    return (
+      <Badge tone="warn">
+        <AlertTriangle className="h-3 w-3" /> Schema change
+      </Badge>
+    );
+  }
   return (
-    <span className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] ${c.cls}`}>
-      <Icon className="h-3 w-3" /> {c.label}
-    </span>
+    <Badge tone="danger">
+      <ShieldAlert className="h-3 w-3" /> Destructive
+    </Badge>
   );
 }
 
@@ -266,37 +257,37 @@ function ResultTable({ result }: { result: QueryResult }) {
         <CellViewer column={view.column} value={view.value} onClose={() => setView(null)} />
       )}
       <table className="w-full border-collapse text-xs">
-        <thead className="sticky top-0 bg-card">
+        <thead className="sticky top-0 bg-paper">
           <tr>
-            <th className="border-b border-r px-2 py-1 text-right text-muted-foreground">#</th>
+            <th className="border-b border-ink/[0.1] px-3 py-2 text-right font-mono text-[11px] font-medium text-muted/70">
+              #
+            </th>
             {result.columns.map((c) => (
               <th
                 key={c.name}
-                className="border-b border-r px-2 py-1 text-left font-medium"
+                className="border-b border-ink/[0.1] px-3 py-2 text-left font-mono text-[11px] font-semibold text-muted"
                 title={c.type_name}
               >
                 {c.name}
-                <span className="ml-1 font-normal text-muted-foreground">{c.type_name}</span>
+                <span className="ml-1.5 font-normal text-muted/60">{c.type_name}</span>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} className="hover:bg-muted/50">
-              <td className="border-b border-r px-2 py-1 text-right text-muted-foreground">{i + 1}</td>
+            <tr key={i} className="transition-colors hover:bg-ink/[0.03]">
+              <td className="border-b border-ink/[0.05] px-3 py-1.5 text-right font-mono text-muted/60">
+                {i + 1}
+              </td>
               {row.map((cell, j) => (
                 <td
                   key={j}
                   onClick={() => setView({ column: result.columns[j]?.name ?? "", value: cell })}
-                  className="max-w-[28rem] cursor-pointer truncate border-b border-r px-2 py-1 font-mono hover:bg-muted"
+                  className="max-w-[28rem] cursor-pointer truncate border-b border-ink/[0.05] px-3 py-1.5 font-mono"
                   title="Click to expand"
                 >
-                  {cell === null ? (
-                    <span className="italic text-muted-foreground">NULL</span>
-                  ) : (
-                    cell
-                  )}
+                  {cell === null ? <span className="italic text-muted/60">NULL</span> : cell}
                 </td>
               ))}
             </tr>
@@ -304,7 +295,7 @@ function ResultTable({ result }: { result: QueryResult }) {
         </tbody>
       </table>
       {result.rows.length > DOM_ROW_CAP && (
-        <p className="p-2 text-xs text-muted-foreground">
+        <p className="p-3 font-mono text-[11px] text-muted">
           Showing first {DOM_ROW_CAP} of {result.rows.length} fetched rows (canvas grid upgrade
           pending).
         </p>

@@ -3,6 +3,8 @@ import { Code2, Table2, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { useStore } from "@/store";
 import { cn } from "@/lib/utils";
+import { Button, ThemeToggle } from "@/components/ui";
+import { PentaMark } from "@/components/PentaMark";
 import { ConnectionPanel } from "@/components/ConnectionPanel";
 import { LocalDbPanel } from "@/components/LocalDbPanel";
 import { Explorer } from "@/components/Explorer";
@@ -34,52 +36,55 @@ export default function App() {
   }
 
   return (
-    <div className="relative flex h-full w-full flex-col">
+    <div className="relative flex h-full w-full flex-col bg-paper text-ink">
       {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
-      <header className="flex h-10 items-center gap-2 border-b px-3 text-sm">
-        <div className="h-3 w-3 rounded-full bg-primary" />
-        <span className="font-semibold tracking-tight">Penta</span>
-        <span className="text-muted-foreground">PostgreSQL workbench</span>
+
+      <header className="flex h-12 items-center gap-3 px-4">
+        <a href="#" className="flex items-center gap-2 font-display text-[17px] leading-none">
+          <PentaMark className="h-[22px] w-[22px] text-ink" />
+          Penta
+        </a>
+        <span className="hidden text-xs text-muted/80 sm:inline">Postgres workbench</span>
         {session && (
-          <button
-            onClick={disconnect}
-            className="ml-3 rounded-md border bg-muted px-2 py-0.5 text-xs hover:text-foreground"
-          >
+          <Button variant="ghost" size="xs" onClick={disconnect} className="ml-1">
             Disconnect {session.name}
-          </button>
+          </Button>
         )}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-1.5">
+          {core && <span className="font-mono text-[11px] text-muted/70">core v{core}</span>}
           <LicensePanel />
-          <span className="text-xs text-muted-foreground">
-            {core ? `core v${core}` : "browser preview"}
-          </span>
+          <ThemeToggle />
         </div>
       </header>
 
-      <div className="grid flex-1 grid-cols-[280px_1fr] overflow-hidden">
-        <aside className="flex flex-col gap-4 overflow-auto border-r p-3">
+      <div className="grid flex-1 grid-cols-[264px_1fr] overflow-hidden">
+        <aside className="flex flex-col gap-6 overflow-auto bg-ink/[0.02] px-3 pb-4 pt-2">
           <LocalDbPanel />
           <ConnectionPanel />
           <Explorer />
         </aside>
-        <main className="flex flex-col overflow-hidden">
-          <div className="flex h-8 items-center gap-1 border-b px-2 text-xs">
+        <main className="flex min-w-0 flex-col overflow-hidden bg-paper">
+          <div className="flex h-10 items-center gap-1 px-2.5">
             <button
               onClick={showQuery}
               className={cn(
-                "flex items-center gap-1 rounded-md px-2 py-1",
-                mainView.kind === "query" ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted/50",
+                "flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium transition-colors",
+                mainView.kind === "query"
+                  ? "bg-ink/[0.06] text-ink"
+                  : "text-muted hover:bg-ink/[0.04] hover:text-ink",
               )}
             >
               <Code2 className="h-3.5 w-3.5" /> Query
             </button>
             {mainView.kind === "data" && (
-              <span className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 font-medium">
+              <span className="flex items-center gap-1.5 bg-ink/[0.06] px-2.5 py-1 text-[12px] font-medium text-ink">
                 <Table2 className="h-3.5 w-3.5" />
-                {mainView.schema}.{mainView.table}
+                <span className="font-mono text-[11px]">
+                  {mainView.schema}.{mainView.table}
+                </span>
                 <button
                   onClick={showQuery}
-                  className="ml-1 text-muted-foreground hover:text-foreground"
+                  className="ml-0.5 text-muted hover:text-ink"
                   title="Close table"
                 >
                   <X className="h-3 w-3" />
@@ -87,7 +92,7 @@ export default function App() {
               </span>
             )}
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden border-t border-ink/[0.07]">
             {mainView.kind === "data" ? (
               <DataGrid
                 key={`${mainView.schema}.${mainView.table}`}

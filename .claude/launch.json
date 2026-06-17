@@ -6,6 +6,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@penta/website", "dev"],
       "port": 4599
+    },
+    {
+      "name": "desktop",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@penta/desktop", "exec", "vite", "--port", "1599", "--strictPort"],
+      "port": 1599
     }
   ]
 }

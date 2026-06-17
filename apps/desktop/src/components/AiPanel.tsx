@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Settings2, Eye, ShieldCheck, Loader2 } from "lucide-react";
+import { Sparkles, Settings2, Eye, ShieldCheck, Loader2, X } from "lucide-react";
 import { api, errMessage, type AiFeature, type AiPayload, type AiSettings } from "@/lib/api";
 import {
   DEFAULT_AI_SETTINGS,
@@ -8,6 +8,7 @@ import {
   loadAiSettings,
   saveAiSettings,
 } from "@/lib/aiSettings";
+import { Button, Badge, inputCls, selectCls } from "@/components/ui";
 
 /**
  * Privacy-first AI assistant (Decision #15/#16). NL→SQL, explain, and error-fix
@@ -84,46 +85,45 @@ export function AiPanel({
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1 rounded-md border bg-muted px-2 py-1 text-xs hover:text-foreground"
-        title="AI assistant"
-      >
-        <Sparkles className="h-3.5 w-3.5 text-primary" /> AI
-      </button>
+      <Button variant="ghost" size="sm" onClick={() => setOpen(true)} title="AI assistant">
+        <Sparkles className="h-3.5 w-3.5 text-accent" /> AI
+      </Button>
     );
   }
 
   const cloud = isCloud(settings.provider);
 
   return (
-    <div className="absolute right-2 top-10 z-20 w-[360px] rounded-lg border bg-card p-3 shadow-xl">
-      <div className="mb-2 flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <span className="text-sm font-medium">AI assistant</span>
-        <span className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          <ShieldCheck className="h-3 w-3" /> schema-only
-        </span>
+    <div className="absolute right-2 top-12 z-20 w-[360px] border border-ink/10 bg-paper p-3 shadow-pop">
+      <div className="mb-2.5 flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-accent" />
+        <span className="font-display text-sm">AI assistant</span>
+        <Badge tone="ok">
+          <ShieldCheck className="h-3 w-3" /> Schema-only
+        </Badge>
         <button
           onClick={() => setShowSettings((s) => !s)}
-          className="ml-auto text-muted-foreground hover:text-foreground"
+          className="ml-auto p-0.5 text-muted transition-colors hover:bg-ink/[0.06] hover:text-ink"
           title="AI settings"
         >
           <Settings2 className="h-4 w-4" />
         </button>
-        <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
-          ✕
+        <button
+          onClick={() => setOpen(false)}
+          className="p-0.5 text-muted transition-colors hover:bg-ink/[0.06] hover:text-ink"
+        >
+          <X className="h-4 w-4" />
         </button>
       </div>
 
       {showSettings && (
-        <div className="mb-3 space-y-2 rounded-md border bg-background/50 p-2 text-xs">
-          <label className="block">
+        <div className="mb-3 space-y-2.5 bg-ink/[0.03] p-2.5 text-xs">
+          <label className="block text-[11px] font-medium text-muted">
             Provider
             <select
               value={settings.provider}
               onChange={(e) => update({ provider: e.target.value as AiSettings["provider"] })}
-              className="mt-0.5 w-full rounded border bg-background px-1.5 py-1"
+              className={`mt-1 w-full ${selectCls}`}
             >
               {Object.entries(PROVIDER_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -132,39 +132,39 @@ export function AiPanel({
               ))}
             </select>
           </label>
-          <label className="block">
+          <label className="block text-[11px] font-medium text-muted">
             Model
             <input
               value={settings.model ?? ""}
               onChange={(e) => update({ model: e.target.value })}
               placeholder={settings.provider === "anthropic" ? "claude-opus-4-8" : "model name"}
-              className="mt-0.5 w-full rounded border bg-background px-1.5 py-1"
+              className={`mt-1 ${inputCls}`}
             />
           </label>
           {cloud && (
-            <label className="block">
+            <label className="block text-[11px] font-medium text-muted">
               API key
               <input
                 type="password"
                 value={settings.api_key ?? ""}
                 onChange={(e) => update({ api_key: e.target.value })}
                 placeholder="stored locally, never logged"
-                className="mt-0.5 w-full rounded border bg-background px-1.5 py-1"
+                className={`mt-1 ${inputCls}`}
               />
             </label>
           )}
-          <label className="block">
+          <label className="block text-[11px] font-medium text-muted">
             Base URL (optional)
             <input
               value={settings.base_url ?? ""}
               onChange={(e) => update({ base_url: e.target.value })}
               placeholder={settings.provider === "ollama" ? "http://localhost:11434/v1" : "default"}
-              className="mt-0.5 w-full rounded border bg-background px-1.5 py-1"
+              className={`mt-1 ${inputCls}`}
             />
           </label>
           <button
             onClick={() => update(DEFAULT_AI_SETTINGS)}
-            className="text-muted-foreground underline hover:text-foreground"
+            className="text-[11px] text-muted underline transition-colors hover:text-ink"
           >
             reset
           </button>
@@ -176,88 +176,73 @@ export function AiPanel({
         onChange={(e) => setPrompt(e.target.value)}
         placeholder="Describe the query in plain English…"
         rows={2}
-        className="w-full resize-none rounded-md border bg-background px-2 py-1.5 text-xs"
+        className={`resize-none ${inputCls}`}
       />
 
       <div className="mt-2 flex flex-wrap gap-1.5">
-        <AiButton busy={busy === "nl_to_sql"} onClick={() => run("nl_to_sql")}>
-          Generate SQL
-        </AiButton>
-        <AiButton busy={busy === "explain_sql"} onClick={() => run("explain_sql")}>
-          Explain SQL
-        </AiButton>
-        <AiButton busy={busy === "explain_error"} onClick={() => run("explain_error")}>
-          Explain error
-        </AiButton>
-        <button
+        <Button variant="ghost" size="xs" disabled={busy === "nl_to_sql"} onClick={() => run("nl_to_sql")}>
+          {busy === "nl_to_sql" && <Loader2 className="h-3 w-3 animate-spin" />} Generate SQL
+        </Button>
+        <Button variant="ghost" size="xs" disabled={busy === "explain_sql"} onClick={() => run("explain_sql")}>
+          {busy === "explain_sql" && <Loader2 className="h-3 w-3 animate-spin" />} Explain SQL
+        </Button>
+        <Button variant="ghost" size="xs" disabled={busy === "explain_error"} onClick={() => run("explain_error")}>
+          {busy === "explain_error" && <Loader2 className="h-3 w-3 animate-spin" />} Explain error
+        </Button>
+        <Button
+          variant="plain"
+          size="xs"
           onClick={() => inspect("nl_to_sql")}
-          className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+          className="ml-auto"
           title="See exactly what will be sent"
         >
           <Eye className="h-3 w-3" /> Inspect
-        </button>
+        </Button>
       </div>
 
       {cloud && (
-        <p className="mt-2 text-[10px] text-amber-400">
+        <p className="mt-2 text-[11px] text-warn">
           Sends schema (no row data) to {PROVIDER_LABELS[settings.provider]}.
         </p>
       )}
 
       {error && (
-        <p className="mt-2 rounded border border-red-500/30 bg-red-500/10 p-1.5 text-[11px] text-red-300">
+        <p className="mt-2 bg-accent/[0.1] p-2 text-[11px] text-ink ring-1 ring-accent/20">
           {error}
         </p>
       )}
 
       {preview && (
-        <div className="mt-2 rounded-md border bg-background/60 p-2">
-          <p className="mb-1 text-[10px] uppercase text-muted-foreground">
+        <div className="mt-2 bg-ink/[0.04] p-2.5">
+          <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted">
             Pre-send inspector · data included: {String(preview.includes_data)}
           </p>
-          <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-[10px] text-muted-foreground">
+          <pre className="max-h-40 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-muted">
             {preview.messages.map((m) => m.content).join("\n")}
           </pre>
         </div>
       )}
 
       {output && (
-        <div className="mt-2 rounded-md border bg-background/60 p-2">
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap text-[11px]">{output.text}</pre>
+        <div className="mt-2 bg-ink/[0.04] p-2.5">
+          <pre className="max-h-48 overflow-auto whitespace-pre-wrap font-mono text-[11px]">
+            {output.text}
+          </pre>
           {output.insertable && (
-            <button
+            <Button
+              variant="solid"
+              size="xs"
+              className="mt-2"
               onClick={() => {
                 onInsertSql(output.text);
                 setOpen(false);
               }}
-              className="mt-1.5 rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground"
             >
               Insert into editor (review before running)
-            </button>
+            </Button>
           )}
         </div>
       )}
     </div>
-  );
-}
-
-function AiButton({
-  busy,
-  onClick,
-  children,
-}: {
-  busy: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      disabled={busy}
-      onClick={onClick}
-      className="flex items-center gap-1 rounded-md border bg-muted px-2 py-1 text-[11px] hover:text-foreground disabled:opacity-50"
-    >
-      {busy && <Loader2 className="h-3 w-3 animate-spin" />}
-      {children}
-    </button>
   );
 }

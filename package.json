@@ -9,6 +9,8 @@
     "build": "tauri build",
     "desktop:dev": "pnpm --filter @penta/desktop dev",
     "desktop:build": "pnpm --filter @penta/desktop build",
+    "web:dev": "pnpm --filter @penta/website dev",
+    "web:build": "pnpm --filter @penta/website build",
     "tauri": "tauri",
     "check": "cargo check --workspace",
     "test": "cargo test --workspace",

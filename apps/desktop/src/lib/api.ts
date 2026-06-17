@@ -254,6 +254,8 @@ export const api = {
     invoke<string>("connection_connect", { connectionId }),
   connectionDisconnect: (sessionId: string) =>
     invoke<void>("connection_disconnect", { sessionId }),
+  connectionDelete: (connectionId: string) =>
+    invoke<void>("connection_delete", { connectionId }),
   dbList: (sessionId: string) => invoke<DatabaseInfo[]>("db_list", { sessionId }),
   schemaList: (sessionId: string) =>
     invoke<SchemaInfo[]>("schema_list", { sessionId }),

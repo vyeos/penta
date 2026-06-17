@@ -131,6 +131,18 @@ pub async fn connection_disconnect(
     Ok(())
 }
 
+/// Permanently delete a saved connection: drops any live sessions on it,
+/// removes its vault password, and deletes the stored definition. The remote
+/// database itself is never touched.
+#[tauri::command]
+pub async fn connection_delete(
+    state: State<'_, AppState>,
+    connection_id: String,
+) -> ApiResult<()> {
+    state.manager.delete_connection(&connection_id).await?;
+    Ok(())
+}
+
 async fn session_of(
     state: &State<'_, AppState>,
     session_id: &str,

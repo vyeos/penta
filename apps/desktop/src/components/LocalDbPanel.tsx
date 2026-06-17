@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Database, Plus, Play, Square, Copy, Check, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import { api, errMessage, type InstanceInfo } from "@/lib/api";
 import { useStore } from "@/store";
+import { cn } from "@/lib/utils";
+import { Button, inputCls, sectionLabelCls } from "@/components/ui";
 
 /**
  * Docker-free local PostgreSQL manager. Create an instance and Penta spins up a
@@ -102,31 +104,30 @@ export function LocalDbPanel() {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          <Database className="h-3 w-3" /> Local databases
+        <p className={cn(sectionLabelCls, "flex items-center gap-1.5")}>
+          <Database className="h-3.5 w-3.5 text-muted/70" /> Local databases
         </p>
-        <button
-          className="rounded-md border bg-muted px-2 py-0.5 text-xs hover:text-foreground"
-          onClick={() => setShowForm((v) => !v)}
-        >
-          {showForm ? "Cancel" : "+ New"}
-        </button>
+        <Button variant="ghost" size="xs" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? "Cancel" : "New"}
+        </Button>
       </div>
 
       {showForm && (
-        <div className="space-y-1.5 rounded-md border bg-card p-2">
+        <div className="space-y-2 bg-ink/[0.03] p-2.5">
           <input
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && create()}
             placeholder="project name, e.g. my-app"
-            className="w-full rounded-md border bg-background px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-ring"
+            className={inputCls}
           />
-          <button
+          <Button
+            variant="solid"
+            size="sm"
+            className="w-full"
             disabled={busy === "create" || !name.trim()}
             onClick={create}
-            className="flex w-full items-center justify-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
           >
             {busy === "create" ? (
               <>
@@ -137,25 +138,25 @@ export function LocalDbPanel() {
                 <Plus className="h-3 w-3" /> Create &amp; start
               </>
             )}
-          </button>
-          <p className="text-[10px] text-muted-foreground">
+          </Button>
+          <p className="text-[11px] text-muted/80">
             Spins up a real PostgreSQL on a free port. No Docker required.
           </p>
         </div>
       )}
 
-      {error && <p className="px-1 text-xs text-red-400">{error}</p>}
+      {error && <p className="px-1 font-mono text-[11px] text-accent">{error}</p>}
 
-      <ul className="space-y-1">
+      <ul className="space-y-1.5">
         {instances.map((inst) => (
-          <li key={inst.id} className="rounded-md border bg-card/50 p-2">
+          <li key={inst.id} className="bg-ink/[0.03] p-2.5">
             <div className="flex items-center gap-2">
               <span
-                className={inst.running ? "h-2 w-2 rounded-full bg-emerald-500" : "h-2 w-2 rounded-full bg-muted-foreground/40"}
+                className={cn("h-2 w-2 shrink-0", inst.running ? "bg-ok" : "bg-muted/40")}
                 title={inst.running ? "running" : "stopped"}
               />
               <span className="truncate text-sm font-medium">{inst.name}</span>
-              <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+              <span className="ml-auto font-mono text-[10px] text-muted/70">
                 :{inst.port} · PG{inst.pg_version.match(/\d+/)?.[0] ?? ""}
               </span>
             </div>
@@ -163,67 +164,59 @@ export function LocalDbPanel() {
             <button
               onClick={() => copy(inst.url, inst.id)}
               title="Copy DATABASE_URL"
-              className="mt-1 flex w-full items-center gap-1 rounded border bg-background px-1.5 py-1 text-left font-mono text-[10px] text-muted-foreground hover:text-foreground"
+              className="mt-2 flex w-full items-center gap-1.5 bg-ink/[0.04] px-2 py-1.5 text-left font-mono text-[10px] text-muted transition-colors hover:bg-ink/[0.08] hover:text-ink"
             >
               {copied === inst.id ? (
-                <Check className="h-3 w-3 shrink-0 text-emerald-400" />
+                <Check className="h-3 w-3 shrink-0 text-ok" />
               ) : (
                 <Copy className="h-3 w-3 shrink-0" />
               )}
               <span className="truncate">{inst.url}</span>
             </button>
 
-            <div className="mt-1 flex items-center gap-1">
-              <IconBtn onClick={() => toggle(inst)} busy={busy === inst.id} title={inst.running ? "Stop" : "Start"}>
-                {inst.running ? <Square className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-              </IconBtn>
-              <button
+            <div className="mt-2 flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => toggle(inst)}
+                disabled={busy === inst.id}
+                title={inst.running ? "Stop" : "Start"}
+              >
+                {busy === inst.id ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : inst.running ? (
+                  <Square className="h-3 w-3" />
+                ) : (
+                  <Play className="h-3 w-3" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="xs"
                 disabled={!inst.running || busy === inst.id}
                 onClick={() => open(inst)}
-                className="flex items-center gap-1 rounded-md border bg-muted px-2 py-1 text-[11px] hover:text-foreground disabled:opacity-40"
               >
                 <ExternalLink className="h-3 w-3" /> Open
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="plain"
+                size="xs"
                 onClick={() => remove(inst)}
                 disabled={busy === inst.id}
                 title="Delete database"
-                className="ml-auto rounded-md border bg-muted p-1 text-muted-foreground hover:text-red-400 disabled:opacity-40"
+                className="ml-auto hover:bg-accent/10 hover:text-accent"
               >
                 <Trash2 className="h-3 w-3" />
-              </button>
+              </Button>
             </div>
           </li>
         ))}
         {instances.length === 0 && !showForm && (
-          <li className="px-1 text-xs text-muted-foreground">
+          <li className="px-1 text-xs text-muted/80">
             No local databases yet — create one to get a ready-to-use Postgres.
           </li>
         )}
       </ul>
     </div>
-  );
-}
-
-function IconBtn({
-  onClick,
-  busy,
-  title,
-  children,
-}: {
-  onClick: () => void;
-  busy: boolean;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={busy}
-      title={title}
-      className="flex items-center gap-1 rounded-md border bg-muted px-2 py-1 text-[11px] hover:text-foreground disabled:opacity-40"
-    >
-      {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : children}
-    </button>
   );
 }
