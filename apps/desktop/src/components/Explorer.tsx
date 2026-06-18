@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { ChevronRight, Table2, Eye, Boxes } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronRight, Table2, Eye, Boxes, RefreshCw } from "lucide-react";
 import { api, errMessage, type RelationInfo, type SchemaInfo } from "@/lib/api";
 import { useStore } from "@/store";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import { sectionLabelCls } from "@/components/ui";
 
 const TABLE_KINDS = ["r", "p"];
 const VIEW_KINDS = ["v", "m"];
+const ALL_KINDS = [...TABLE_KINDS, ...VIEW_KINDS];
 
 export function Explorer() {
   const session = useStore((s) => s.session);
@@ -14,37 +15,73 @@ export function Explorer() {
   const requestRun = useStore((s) => s.requestRun);
   const openTable = useStore((s) => s.openTable);
   const showQuery = useStore((s) => s.showQuery);
+  const schemaVersion = useStore((s) => s.schemaVersion);
 
   const [schemas, setSchemas] = useState<SchemaInfo[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [rels, setRels] = useState<Record<string, RelationInfo[]>>({});
   const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
+  // Mirror the relation cache so refresh can re-fetch the already-loaded schemas
+  // without re-running on every cache write.
+  const relsRef = useRef(rels);
+  relsRef.current = rels;
+
+  // Initial load + full reset when the session changes.
   useEffect(() => {
+    setErr(null);
     if (!session) {
       setSchemas([]);
       setRels({});
       setExpanded({});
       return;
     }
-    (async () => {
-      try {
-        setSchemas(await api.schemaList(session.sessionId));
-      } catch (e) {
-        setErr(errMessage(e));
-      }
-    })();
+    api
+      .schemaList(session.sessionId)
+      .then(setSchemas)
+      .catch((e) => setErr(errMessage(e)));
   }, [session]);
+
+  // Re-introspect schemas and every already-loaded relation list, preserving
+  // expansion state. Driven by the refresh button and by query execution.
+  const refresh = useCallback(async () => {
+    if (!session) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      setSchemas(await api.schemaList(session.sessionId));
+      const loaded = Object.keys(relsRef.current);
+      const pairs = await Promise.all(
+        loaded.map(
+          async (schema) =>
+            [schema, await api.relationList(session.sessionId, schema, ALL_KINDS)] as const,
+        ),
+      );
+      setRels((prev) => {
+        const next = { ...prev };
+        for (const [schema, all] of pairs) next[schema] = all;
+        return next;
+      });
+    } catch (e) {
+      setErr(errMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [session]);
+
+  // A successful query bumps schemaVersion; mirror any DDL into the tree.
+  useEffect(() => {
+    if (schemaVersion > 0) void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schemaVersion]);
 
   const toggle = useCallback(
     async (schema: string) => {
       setExpanded((e) => ({ ...e, [schema]: !e[schema] }));
       if (!rels[schema] && session) {
         try {
-          const all = await api.relationList(session.sessionId, schema, [
-            ...TABLE_KINDS,
-            ...VIEW_KINDS,
-          ]);
+          const all = await api.relationList(session.sessionId, schema, ALL_KINDS);
           setRels((r) => ({ ...r, [schema]: all }));
         } catch (e) {
           setErr(errMessage(e));
@@ -72,7 +109,17 @@ export function Explorer() {
 
   return (
     <div className="space-y-1.5">
-      <p className={sectionLabelCls}>{session.name}</p>
+      <div className="flex items-center justify-between gap-1.5 pr-1">
+        <p className={sectionLabelCls}>{session.name}</p>
+        <button
+          onClick={() => void refresh()}
+          disabled={busy}
+          title="Refresh schema"
+          className="shrink-0 p-1 text-muted/70 transition-colors hover:text-ink disabled:opacity-50"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", busy && "animate-spin")} />
+        </button>
+      </div>
       {err && <p className="px-1 font-mono text-[11px] text-accent">{err}</p>}
       <ul className="space-y-0.5">
         {schemas.map((s) => {

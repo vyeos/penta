@@ -3,7 +3,15 @@ import CodeMirror from "@uiw/react-codemirror";
 import { sql, PostgreSQL } from "@codemirror/lang-sql";
 import { autocompletion } from "@codemirror/autocomplete";
 import { keymap } from "@codemirror/view";
-import { Play, Square, ShieldCheck, ShieldAlert, AlertTriangle, Download } from "lucide-react";
+import {
+  Play,
+  Square,
+  ShieldCheck,
+  ShieldAlert,
+  AlertTriangle,
+  Download,
+  CheckCircle2,
+} from "lucide-react";
 import {
   api,
   errMessage,
@@ -28,6 +36,7 @@ export function QueryPanel() {
   const setQuery = useStore((s) => s.setQuery);
   const runNonce = useStore((s) => s.runNonce);
   const theme = useStore((s) => s.theme);
+  const bumpSchema = useStore((s) => s.bumpSchema);
 
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +70,8 @@ export function QueryPanel() {
         confirmed,
       );
       setResult(r);
+      // A query may have created/altered/dropped objects; refresh the tree.
+      bumpSchema();
     } catch (e) {
       setError(errMessage(e));
       setResult(null);
@@ -201,7 +212,10 @@ export function QueryPanel() {
             {error}
           </pre>
         )}
-        {result && !error && <ResultTable result={result} />}
+        {result && !error && result.columns.length > 0 && <ResultTable result={result} />}
+        {result && !error && result.columns.length === 0 && (
+          <SuccessNotice result={result} />
+        )}
         {!result && !error && (
           <div className="flex h-full items-center justify-center text-sm text-muted">
             {session ? "Run a query to see results." : "Connect to begin."}
@@ -245,6 +259,15 @@ function RiskBadge({ risk }: { risk: RiskReport | null }) {
     <Badge tone="danger">
       <ShieldAlert className="h-3 w-3" /> Destructive
     </Badge>
+  );
+}
+
+function SuccessNotice({ result }: { result: QueryResult }) {
+  return (
+    <div className="m-3 flex items-center gap-2 bg-ok/[0.1] p-3 font-mono text-xs text-ink ring-1 ring-ok/20">
+      <CheckCircle2 className="h-4 w-4 shrink-0 text-ok" />
+      <span>Command executed successfully · {result.duration_ms} ms</span>
+    </div>
   );
 }
 

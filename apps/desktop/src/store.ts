@@ -42,6 +42,10 @@ interface AppStore {
   mainView: MainView;
   openTable: (schema: string, table: string) => void;
   showQuery: () => void;
+
+  /** Bumped after a successful query so the explorer re-introspects the schema. */
+  schemaVersion: number;
+  bumpSchema: () => void;
 }
 
 export const useStore = create<AppStore>((set) => ({
@@ -66,4 +70,6 @@ export const useStore = create<AppStore>((set) => ({
   mainView: { kind: "query" },
   openTable: (schema, table) => set({ mainView: { kind: "data", schema, table } }),
   showQuery: () => set({ mainView: { kind: "query" } }),
+  schemaVersion: 0,
+  bumpSchema: () => set((s) => ({ schemaVersion: s.schemaVersion + 1 })),
 }));
