@@ -61,13 +61,18 @@ interface AppStore {
 
   /** Open table tabs, in the order they were opened. Persist until closed. */
   openTabs: TableTab[];
+  /** Whether the SQL editor tab is open. Closable like a table tab. */
+  queryOpen: boolean;
   /** Main-pane routing: the SQL editor or an open table's data grid. */
   mainView: MainView;
   /** Open (or focus, if already open) a table tab and make it active. */
   openTable: (schema: string, table: string) => void;
   /** Close a table tab; if it was active, fall back to a neighbor or the editor. */
   closeTable: (schema: string, table: string) => void;
+  /** Show the SQL editor, reopening its tab if it was closed. */
   showQuery: () => void;
+  /** Close the SQL editor tab; if it was active, fall back to a table tab. */
+  closeQuery: () => void;
 
   /** Bumped after a successful query so the explorer re-introspects the schema. */
   schemaVersion: number;
@@ -94,12 +99,13 @@ export const useStore = create<AppStore>((set) => ({
     }),
   session: null,
   setSession: (session) =>
-    set({ session, mainView: { kind: "query" }, openTabs: [] }),
+    set({ session, mainView: { kind: "query" }, openTabs: [], queryOpen: true }),
   query: "SELECT 1;",
   setQuery: (query) => set({ query }),
   runNonce: 0,
   requestRun: () => set((s) => ({ runNonce: s.runNonce + 1 })),
   openTabs: [],
+  queryOpen: true,
   mainView: { kind: "query" },
   openTable: (schema, table) =>
     set((s) => {
@@ -129,7 +135,20 @@ export const useStore = create<AppStore>((set) => ({
           : { kind: "query" as const },
       };
     }),
-  showQuery: () => set({ mainView: { kind: "query" } }),
+  showQuery: () => set({ mainView: { kind: "query" }, queryOpen: true }),
+  closeQuery: () =>
+    set((s) => {
+      // Only re-route if the editor is the view currently on screen.
+      if (s.mainView.kind !== "query") return { queryOpen: false };
+      // Fall back to the most recently opened table tab, if any.
+      const next = s.openTabs[s.openTabs.length - 1];
+      return {
+        queryOpen: false,
+        mainView: next
+          ? { kind: "data" as const, schema: next.schema, table: next.table }
+          : { kind: "query" as const },
+      };
+    }),
   schemaVersion: 0,
   bumpSchema: () => set((s) => ({ schemaVersion: s.schemaVersion + 1 })),
   toasts: [],

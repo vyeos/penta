@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Code2, Table2, X } from "lucide-react";
+import { Code2, Table2, X, Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import { useStore } from "@/store";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,9 @@ export default function App() {
   const openTabs = useStore((s) => s.openTabs);
   const openTable = useStore((s) => s.openTable);
   const closeTable = useStore((s) => s.closeTable);
+  const queryOpen = useStore((s) => s.queryOpen);
   const showQuery = useStore((s) => s.showQuery);
+  const closeQuery = useStore((s) => s.closeQuery);
 
   useEffect(() => {
     api
@@ -34,7 +36,7 @@ export default function App() {
 
   async function disconnect() {
     if (session) {
-      await api.connectionDisconnect(session.sessionId).catch(() => {});
+      await api.connectionDisconnect(session.sessionId).catch(() => { });
       setSession(null);
     }
   }
@@ -49,7 +51,6 @@ export default function App() {
           <PentaMark className="h-[22px] w-[22px] text-ink" />
           Penta
         </a>
-        <span className="hidden text-xs text-muted/80 sm:inline">Postgres workbench</span>
         {session && (
           <Button variant="ghost" size="xs" onClick={disconnect} className="ml-1">
             Disconnect {session.name}
@@ -70,17 +71,27 @@ export default function App() {
         </aside>
         <main className="flex min-w-0 flex-col overflow-hidden bg-paper">
           <div className="flex h-10 items-center gap-1 overflow-x-auto px-2.5">
-            <button
-              onClick={showQuery}
-              className={cn(
-                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium transition-colors",
-                mainView.kind === "query"
-                  ? "bg-ink/[0.06] text-ink"
-                  : "text-muted hover:bg-ink/[0.04] hover:text-ink",
-              )}
-            >
-              <Code2 className="h-3.5 w-3.5" /> Query
-            </button>
+            {queryOpen && (
+              <span
+                className={cn(
+                  "flex shrink-0 items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium transition-colors",
+                  mainView.kind === "query"
+                    ? "bg-ink/[0.06] text-ink"
+                    : "text-muted hover:bg-ink/[0.04] hover:text-ink",
+                )}
+              >
+                <button onClick={showQuery} className="flex items-center gap-1.5" title="Query">
+                  <Code2 className="h-3.5 w-3.5" /> Query
+                </button>
+                <button
+                  onClick={closeQuery}
+                  className="ml-0.5 text-muted hover:text-ink"
+                  title="Close tab"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
             {openTabs.map((tab) => {
               const active =
                 mainView.kind === "data" &&
@@ -116,6 +127,15 @@ export default function App() {
                 </span>
               );
             })}
+            {!queryOpen && (
+              <button
+                onClick={showQuery}
+                title="Open query editor"
+                className="flex shrink-0 items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink"
+              >
+                <Plus className="h-3.5 w-3.5" /> Query
+              </button>
+            )}
           </div>
           <div className="flex-1 overflow-hidden border-t border-ink/[0.07]">
             {mainView.kind === "data" ? (
@@ -124,8 +144,15 @@ export default function App() {
                 schema={mainView.schema}
                 table={mainView.table}
               />
-            ) : (
+            ) : queryOpen ? (
               <QueryPanel />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-3 text-muted">
+                <p className="text-sm">No tabs open.</p>
+                <Button variant="ghost" size="sm" onClick={showQuery}>
+                  <Plus className="h-3.5 w-3.5" /> Open query editor
+                </Button>
+              </div>
             )}
           </div>
         </main>
