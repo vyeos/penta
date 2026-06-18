@@ -1,83 +1,83 @@
-name: Release
-
-# Tag a version (e.g. `git tag v0.1.0 && git push --tags`) to build, sign, and
-# publish installers for all three OSes as a draft GitHub Release.
+# name: Release
 #
-# Required repository secrets (none are committed; the build degrades to
-# unsigned artifacts if a secret is absent):
-#   macOS signing + notarization:
-#     APPLE_CERTIFICATE            base64 .p12 of the Developer ID Application cert
-#     APPLE_CERTIFICATE_PASSWORD   password for that .p12
-#     APPLE_SIGNING_IDENTITY       e.g. "Developer ID Application: Your Co (TEAMID)"
-#     APPLE_ID, APPLE_PASSWORD     Apple ID + app-specific password (notarytool)
-#     APPLE_TEAM_ID                your Apple Developer Team ID
-#   Windows signing (optional):
-#     WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD
-#   Tauri auto-updater signing:
-#     TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD
-
-on:
-  push:
-    tags: ["v*"]
-  workflow_dispatch:
-
-jobs:
-  release:
-    permissions:
-      contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: macos-latest
-            args: "--target universal-apple-darwin"
-          - platform: ubuntu-latest
-            args: ""
-          - platform: windows-latest
-            args: ""
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Linux build deps
-        if: matrix.platform == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
-            librsvg2-dev patchelf libgtk-3-dev
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-      - uses: Swatinem/rust-cache@v2
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install
-
-      - name: Build, sign & publish
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS code signing + notarization
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # Auto-updater signing
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "Penta ${{ github.ref_name }}"
-          releaseBody: "See the assets below to download and install Penta."
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
+# # Tag a version (e.g. `git tag v0.1.0 && git push --tags`) to build, sign, and
+# # publish installers for all three OSes as a draft GitHub Release.
+# #
+# # Required repository secrets (none are committed; the build degrades to
+# # unsigned artifacts if a secret is absent):
+# #   macOS signing + notarization:
+# #     APPLE_CERTIFICATE            base64 .p12 of the Developer ID Application cert
+# #     APPLE_CERTIFICATE_PASSWORD   password for that .p12
+# #     APPLE_SIGNING_IDENTITY       e.g. "Developer ID Application: Your Co (TEAMID)"
+# #     APPLE_ID, APPLE_PASSWORD     Apple ID + app-specific password (notarytool)
+# #     APPLE_TEAM_ID                your Apple Developer Team ID
+# #   Windows signing (optional):
+# #     WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD
+# #   Tauri auto-updater signing:
+# #     TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+#
+# on:
+#   push:
+#     tags: ["v*"]
+#   workflow_dispatch:
+#
+# jobs:
+#   release:
+#     permissions:
+#       contents: write
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         include:
+#           - platform: macos-latest
+#             args: "--target universal-apple-darwin"
+#           - platform: ubuntu-latest
+#             args: ""
+#           - platform: windows-latest
+#             args: ""
+#     runs-on: ${{ matrix.platform }}
+#     steps:
+#       - uses: actions/checkout@v4
+#
+#       - name: Install Linux build deps
+#         if: matrix.platform == 'ubuntu-latest'
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+#             librsvg2-dev patchelf libgtk-3-dev
+#
+#       - uses: dtolnay/rust-toolchain@stable
+#         with:
+#           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+#       - uses: Swatinem/rust-cache@v2
+#
+#       - uses: pnpm/action-setup@v4
+#         with:
+#           version: 11
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: 22
+#           cache: pnpm
+#       - run: pnpm install
+#
+#       - name: Build, sign & publish
+#         uses: tauri-apps/tauri-action@v0
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           # macOS code signing + notarization
+#           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+#           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+#           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+#           APPLE_ID: ${{ secrets.APPLE_ID }}
+#           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+#           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+#           # Auto-updater signing
+#           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+#           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+#         with:
+#           tagName: ${{ github.ref_name }}
+#           releaseName: "Penta ${{ github.ref_name }}"
+#           releaseBody: "See the assets below to download and install Penta."
+#           releaseDraft: true
+#           prerelease: false
+#           args: ${{ matrix.args }}
