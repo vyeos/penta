@@ -12,6 +12,7 @@ import { QueryPanel } from "@/components/QueryPanel";
 import { DataGrid } from "@/components/DataGrid";
 import { Onboarding, hasOnboarded } from "@/components/Onboarding";
 import { LicensePanel } from "@/components/LicensePanel";
+import { Toaster } from "@/components/Toaster";
 
 export default function App() {
   const [core, setCore] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export default function App() {
 
   return (
     <div className="relative flex h-full w-full flex-col bg-paper text-ink">
+      <Toaster />
       {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
 
       <header className="flex h-12 items-center gap-3 px-4">

@@ -109,6 +109,21 @@
       transparent 9px 20px
     );
   }
+  /* The per-control error flash: a red line that drains left→right over ~1s.
+     Duration mirrors FLASH_MS in lib/feedback.ts. */
+  .animate-error-timer {
+    animation: penta-error-timer 1000ms linear forwards;
+  }
+}
+
+/* Top-level (not @layer) so inline-style `animation` references can reach it. */
+@keyframes penta-error-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 /* CodeMirror inherits the canvas; the full theme lives in lib/editorTheme.ts. */

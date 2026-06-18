@@ -34,15 +34,59 @@ const btnVariants: Record<Variant, string> = {
   plain: "text-muted hover:bg-ink/[0.06] hover:text-ink",
 };
 
-type Common = { variant?: Variant; size?: Size; className?: string; children: ReactNode };
+type Common = {
+  variant?: Variant;
+  size?: Size;
+  className?: string;
+  children: ReactNode;
+  /** When true the control is briefly inert and draws a depleting red line —
+   *  used to mark the button whose action just errored (see useActionFeedback). */
+  flashing?: boolean;
+};
 type BtnProps = Common & Omit<ComponentPropsWithoutRef<"button">, keyof Common>;
 
 /** The shared control: soft fill, quiet hover, no hard borders. */
-export function Button({ variant = "ghost", size = "sm", className, children, ...rest }: BtnProps) {
+export function Button({
+  variant = "ghost",
+  size = "sm",
+  className,
+  children,
+  flashing = false,
+  disabled,
+  ...rest
+}: BtnProps) {
   return (
-    <button className={cn(btnBase, btnSizes[size], btnVariants[variant], className)} {...rest}>
+    <button
+      disabled={disabled}
+      aria-disabled={flashing || undefined}
+      className={cn(
+        btnBase,
+        btnSizes[size],
+        btnVariants[variant],
+        flashing && "pointer-events-none relative overflow-hidden",
+        className,
+      )}
+      {...rest}
+    >
       {children}
+      {flashing && <ErrorTimer />}
     </button>
+  );
+}
+
+/**
+ * A red, left-anchored line that depletes to zero over ~1s — the "an error just
+ * happened here" affordance. Drop it into any `position: relative` control.
+ */
+export function ErrorTimer({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "animate-error-timer pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-left bg-accent",
+        className,
+      )}
+    />
   );
 }
 

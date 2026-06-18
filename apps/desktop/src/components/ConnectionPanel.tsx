@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { api, errMessage, type ConnectionConfig, type EnvLabel, type SslMode } from "@/lib/api";
+import { api, type ConnectionConfig, type EnvLabel, type SslMode } from "@/lib/api";
 import { parseConnectionString, type ParsedConn } from "@/lib/connString";
 import { useStore } from "@/store";
+import { useActionFeedback } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
-import { Button, inputCls, selectCls, sectionLabelCls } from "@/components/ui";
+import { Button, ErrorTimer, inputCls, selectCls, sectionLabelCls } from "@/components/ui";
 
 const ENV_DOT: Record<EnvLabel, string> = {
   local: "bg-ok",
@@ -34,14 +35,15 @@ export function ConnectionPanel() {
   const [busy, setBusy] = useState(false);
   const setSession = useStore((s) => s.setSession);
   const session = useStore((s) => s.session);
+  const { fail, isFlashing } = useActionFeedback();
 
   const refresh = useCallback(async () => {
     try {
       setConnections(await api.connectionList());
     } catch (e) {
-      setStatus(errMessage(e));
+      fail(e, { title: "Couldn't load connections" });
     }
-  }, []);
+  }, [fail]);
 
   useEffect(() => {
     void refresh();
@@ -86,7 +88,8 @@ export function ConnectionPanel() {
       const r = await api.connectionTest(form);
       setStatus(`OK · ${r.server_version.split(",")[0]}`);
     } catch (e) {
-      setStatus(`✗ ${errMessage(e)}`);
+      setStatus(null);
+      fail(e, { key: "test", title: "Connection test failed" });
     } finally {
       setBusy(false);
     }
@@ -101,7 +104,7 @@ export function ConnectionPanel() {
       setStatus(null);
       await refresh();
     } catch (e) {
-      setStatus(`✗ ${errMessage(e)}`);
+      fail(e, { key: "save", title: "Couldn't save connection" });
     } finally {
       setBusy(false);
     }
@@ -120,7 +123,8 @@ export function ConnectionPanel() {
       });
       setStatus(null);
     } catch (e) {
-      setStatus(`✗ ${errMessage(e)}`);
+      setStatus(null);
+      fail(e, { key: c.id, title: `Couldn't connect to ${c.name}` });
     }
   }
 
@@ -140,7 +144,7 @@ export function ConnectionPanel() {
       if (session?.connectionId === c.id) setSession(null);
       await refresh();
     } catch (e) {
-      setStatus(`✗ ${errMessage(e)}`);
+      fail(e, { key: `del-${c.id}`, title: "Couldn't delete connection" });
     } finally {
       setBusy(false);
     }
@@ -246,10 +250,16 @@ export function ConnectionPanel() {
             </label>
           </div>
           <div className="flex gap-2 pt-0.5">
-            <Button variant="ghost" size="sm" disabled={busy} onClick={test}>
+            <Button variant="ghost" size="sm" disabled={busy} flashing={isFlashing("test")} onClick={test}>
               Test
             </Button>
-            <Button variant="solid" size="sm" disabled={busy || !form.name} onClick={save}>
+            <Button
+              variant="solid"
+              size="sm"
+              disabled={busy || !form.name}
+              flashing={isFlashing("save")}
+              onClick={save}
+            >
               Save
             </Button>
           </div>
@@ -261,19 +271,25 @@ export function ConnectionPanel() {
           <li key={c.id} className="group flex items-center gap-1">
             <button
               onClick={() => connect(c)}
-              className="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-1.5 text-left text-sm transition-colors hover:bg-ink/[0.05]"
+              aria-disabled={isFlashing(c.id) || undefined}
+              className={cn(
+                "relative flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden px-2 py-1.5 text-left text-sm transition-colors hover:bg-ink/[0.05]",
+                isFlashing(c.id) && "pointer-events-none",
+              )}
             >
               <span className={cn("h-2 w-2 shrink-0", ENV_DOT[c.env_label])} />
               <span className="truncate">{c.name}</span>
               <span className="ml-auto truncate font-mono text-[10px] text-muted/70">
                 {c.host}:{c.port}
               </span>
+              {isFlashing(c.id) && <ErrorTimer />}
             </button>
             <Button
               variant="plain"
               size="xs"
               onClick={() => remove(c)}
               disabled={busy}
+              flashing={isFlashing(`del-${c.id}`)}
               title="Delete connection"
               className="shrink-0 opacity-0 transition-opacity hover:bg-accent/10 hover:text-accent focus:opacity-100 group-hover:opacity-100"
             >

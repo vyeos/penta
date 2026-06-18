@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Database, Plus, Play, Square, Copy, Check, Trash2, ExternalLink, Loader2 } from "lucide-react";
-import { api, errMessage, type InstanceInfo } from "@/lib/api";
+import { api, type InstanceInfo } from "@/lib/api";
 import { useStore } from "@/store";
+import { useActionFeedback } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 import { Button, inputCls, sectionLabelCls } from "@/components/ui";
 
@@ -16,16 +17,16 @@ export function LocalDbPanel() {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState<string | null>(null); // "create" | instance id
-  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const { fail, isFlashing } = useActionFeedback();
 
   const refresh = useCallback(async () => {
     try {
       setInstances(await api.instanceList());
     } catch (e) {
-      setError(errMessage(e));
+      fail(e, { title: "Couldn't load local databases" });
     }
-  }, []);
+  }, [fail]);
 
   useEffect(() => {
     void refresh();
@@ -34,14 +35,13 @@ export function LocalDbPanel() {
   async function create() {
     if (!name.trim()) return;
     setBusy("create");
-    setError(null);
     try {
       await api.instanceProvision(name.trim());
       setName("");
       setShowForm(false);
       await refresh();
     } catch (e) {
-      setError(errMessage(e));
+      fail(e, { key: "create", title: "Couldn't create database" });
     } finally {
       setBusy(null);
     }
@@ -49,13 +49,12 @@ export function LocalDbPanel() {
 
   async function toggle(inst: InstanceInfo) {
     setBusy(inst.id);
-    setError(null);
     try {
       if (inst.running) await api.instanceStop(inst.id);
       else await api.instanceStart(inst.id);
       await refresh();
     } catch (e) {
-      setError(errMessage(e));
+      fail(e, { key: inst.id, title: `Couldn't ${inst.running ? "stop" : "start"} ${inst.name}` });
     } finally {
       setBusy(null);
     }
@@ -63,7 +62,6 @@ export function LocalDbPanel() {
 
   async function open(inst: InstanceInfo) {
     setBusy(inst.id);
-    setError(null);
     try {
       const s = await api.instanceOpen(inst.id);
       setSession({
@@ -75,7 +73,7 @@ export function LocalDbPanel() {
       });
       await refresh();
     } catch (e) {
-      setError(errMessage(e));
+      fail(e, { key: `open-${inst.id}`, title: `Couldn't open ${inst.name}` });
     } finally {
       setBusy(null);
     }
@@ -89,7 +87,7 @@ export function LocalDbPanel() {
       await api.instanceRemove(inst.id);
       await refresh();
     } catch (e) {
-      setError(errMessage(e));
+      fail(e, { key: `del-${inst.id}`, title: "Couldn't delete database" });
     } finally {
       setBusy(null);
     }
@@ -127,6 +125,7 @@ export function LocalDbPanel() {
             size="sm"
             className="w-full"
             disabled={busy === "create" || !name.trim()}
+            flashing={isFlashing("create")}
             onClick={create}
           >
             {busy === "create" ? (
@@ -144,8 +143,6 @@ export function LocalDbPanel() {
           </p>
         </div>
       )}
-
-      {error && <p className="px-1 font-mono text-[11px] text-accent">{error}</p>}
 
       <ul className="space-y-1.5">
         {instances.map((inst) => (
@@ -180,6 +177,7 @@ export function LocalDbPanel() {
                 size="xs"
                 onClick={() => toggle(inst)}
                 disabled={busy === inst.id}
+                flashing={isFlashing(inst.id)}
                 title={inst.running ? "Stop" : "Start"}
               >
                 {busy === inst.id ? (
@@ -194,6 +192,7 @@ export function LocalDbPanel() {
                 variant="ghost"
                 size="xs"
                 disabled={!inst.running || busy === inst.id}
+                flashing={isFlashing(`open-${inst.id}`)}
                 onClick={() => open(inst)}
               >
                 <ExternalLink className="h-3 w-3" /> Open
@@ -203,6 +202,7 @@ export function LocalDbPanel() {
                 size="xs"
                 onClick={() => remove(inst)}
                 disabled={busy === inst.id}
+                flashing={isFlashing(`del-${inst.id}`)}
                 title="Delete database"
                 className="ml-auto hover:bg-accent/10 hover:text-accent"
               >

@@ -16,6 +16,18 @@ export type MainView =
 
 export type Theme = "light" | "dark";
 
+/** A transient notification surfaced top-left. Errors that would otherwise be
+ *  cut off in the cramped sidebar get the full, readable space here. */
+export type ToastKind = "error" | "success" | "info";
+export interface Toast {
+  id: string;
+  kind: ToastKind;
+  title?: string;
+  message: string;
+}
+
+let toastSeq = 0;
+
 function initialTheme(): Theme {
   return document.documentElement.getAttribute("data-theme") === "dark"
     ? "dark"
@@ -46,6 +58,11 @@ interface AppStore {
   /** Bumped after a successful query so the explorer re-introspects the schema. */
   schemaVersion: number;
   bumpSchema: () => void;
+
+  /** Top-left toast stack (errors, mostly). Newest last; capped to a few. */
+  toasts: Toast[];
+  pushToast: (t: Omit<Toast, "id">) => string;
+  dismissToast: (id: string) => void;
 }
 
 export const useStore = create<AppStore>((set) => ({
@@ -72,4 +89,12 @@ export const useStore = create<AppStore>((set) => ({
   showQuery: () => set({ mainView: { kind: "query" } }),
   schemaVersion: 0,
   bumpSchema: () => set((s) => ({ schemaVersion: s.schemaVersion + 1 })),
+  toasts: [],
+  pushToast: (t) => {
+    const id = `toast-${++toastSeq}`;
+    // Keep at most the 4 most recent so a burst of failures can't fill the screen.
+    set((s) => ({ toasts: [...s.toasts, { ...t, id }].slice(-4) }));
+    return id;
+  },
+  dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 }));

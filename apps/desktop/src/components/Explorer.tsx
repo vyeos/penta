@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronRight, Table2, Eye, Boxes, RefreshCw } from "lucide-react";
-import { api, errMessage, type RelationInfo, type SchemaInfo } from "@/lib/api";
+import { api, type RelationInfo, type SchemaInfo } from "@/lib/api";
 import { useStore } from "@/store";
+import { useActionFeedback } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
-import { sectionLabelCls } from "@/components/ui";
+import { ErrorTimer, sectionLabelCls } from "@/components/ui";
 
 const TABLE_KINDS = ["r", "p"];
 const VIEW_KINDS = ["v", "m"];
@@ -16,11 +17,11 @@ export function Explorer() {
   const openTable = useStore((s) => s.openTable);
   const showQuery = useStore((s) => s.showQuery);
   const schemaVersion = useStore((s) => s.schemaVersion);
+  const { fail, isFlashing } = useActionFeedback();
 
   const [schemas, setSchemas] = useState<SchemaInfo[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [rels, setRels] = useState<Record<string, RelationInfo[]>>({});
-  const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   // Mirror the relation cache so refresh can re-fetch the already-loaded schemas
@@ -30,7 +31,6 @@ export function Explorer() {
 
   // Initial load + full reset when the session changes.
   useEffect(() => {
-    setErr(null);
     if (!session) {
       setSchemas([]);
       setRels({});
@@ -40,15 +40,14 @@ export function Explorer() {
     api
       .schemaList(session.sessionId)
       .then(setSchemas)
-      .catch((e) => setErr(errMessage(e)));
-  }, [session]);
+      .catch((e) => fail(e, { title: "Couldn't load schemas" }));
+  }, [session, fail]);
 
   // Re-introspect schemas and every already-loaded relation list, preserving
   // expansion state. Driven by the refresh button and by query execution.
   const refresh = useCallback(async () => {
     if (!session) return;
     setBusy(true);
-    setErr(null);
     try {
       setSchemas(await api.schemaList(session.sessionId));
       const loaded = Object.keys(relsRef.current);
@@ -64,11 +63,11 @@ export function Explorer() {
         return next;
       });
     } catch (e) {
-      setErr(errMessage(e));
+      fail(e, { key: "refresh", title: "Couldn't refresh schema" });
     } finally {
       setBusy(false);
     }
-  }, [session]);
+  }, [session, fail]);
 
   // A successful query bumps schemaVersion; mirror any DDL into the tree.
   useEffect(() => {
@@ -84,11 +83,11 @@ export function Explorer() {
           const all = await api.relationList(session.sessionId, schema, ALL_KINDS);
           setRels((r) => ({ ...r, [schema]: all }));
         } catch (e) {
-          setErr(errMessage(e));
+          fail(e, { key: schema, title: `Couldn't load ${schema}` });
         }
       }
     },
-    [rels, session],
+    [rels, session, fail],
   );
 
   // Single click → open the editable data grid; double click → SELECT into the
@@ -114,13 +113,17 @@ export function Explorer() {
         <button
           onClick={() => void refresh()}
           disabled={busy}
+          aria-disabled={isFlashing("refresh") || undefined}
           title="Refresh schema"
-          className="shrink-0 p-1 text-muted/70 transition-colors hover:text-ink disabled:opacity-50"
+          className={cn(
+            "relative shrink-0 overflow-hidden p-1 text-muted/70 transition-colors hover:text-ink disabled:opacity-50",
+            isFlashing("refresh") && "pointer-events-none",
+          )}
         >
           <RefreshCw className={cn("h-3.5 w-3.5", busy && "animate-spin")} />
+          {isFlashing("refresh") && <ErrorTimer />}
         </button>
       </div>
-      {err && <p className="px-1 font-mono text-[11px] text-accent">{err}</p>}
       <ul className="space-y-0.5">
         {schemas.map((s) => {
           const items = rels[s.name] ?? [];
@@ -130,7 +133,11 @@ export function Explorer() {
             <li key={s.name}>
               <button
                 onClick={() => toggle(s.name)}
-                className="flex w-full items-center gap-1.5 px-1.5 py-1 text-sm transition-colors hover:bg-ink/[0.05]"
+                aria-disabled={isFlashing(s.name) || undefined}
+                className={cn(
+                  "relative flex w-full items-center gap-1.5 overflow-hidden px-1.5 py-1 text-sm transition-colors hover:bg-ink/[0.05]",
+                  isFlashing(s.name) && "pointer-events-none",
+                )}
               >
                 <ChevronRight
                   className={cn(
@@ -140,6 +147,7 @@ export function Explorer() {
                 />
                 <Boxes className="h-3.5 w-3.5 shrink-0 text-muted/70" />
                 <span className="truncate">{s.name}</span>
+                {isFlashing(s.name) && <ErrorTimer />}
               </button>
               {expanded[s.name] && (
                 <ul className="ml-[14px] space-y-0.5 border-l border-ink/[0.08] pl-2.5">
