@@ -23,7 +23,7 @@ export function Toaster() {
   const toasts = useStore((s) => s.toasts);
   if (toasts.length === 0) return null;
   return (
-    <div className="pointer-events-none fixed left-4 top-4 z-50 flex w-[360px] max-w-[calc(100vw-2rem)] flex-col gap-2">
+    <div className="pointer-events-none fixed right-4 top-4 z-50 flex w-[360px] max-w-[calc(100vw-2rem)] flex-col gap-2">
       {toasts.map((t) => (
         <ToastCard key={t.id} toast={t} />
       ))}
@@ -43,7 +43,7 @@ function ToastCard({ toast }: { toast: Toast }) {
 
   return (
     <div className="pointer-events-auto relative flex gap-2.5 overflow-hidden bg-paper p-3 pr-8 shadow-pop">
-      <span className={cn("absolute inset-y-0 left-0 w-[3px]", meta.bar)} aria-hidden />
+
       <Icon className={cn("mt-px h-4 w-4 shrink-0", meta.text)} aria-hidden />
       <div className="min-w-0 flex-1">
         {toast.title && (
