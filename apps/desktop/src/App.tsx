@@ -20,6 +20,9 @@ export default function App() {
   const session = useStore((s) => s.session);
   const setSession = useStore((s) => s.setSession);
   const mainView = useStore((s) => s.mainView);
+  const openTabs = useStore((s) => s.openTabs);
+  const openTable = useStore((s) => s.openTable);
+  const closeTable = useStore((s) => s.closeTable);
   const showQuery = useStore((s) => s.showQuery);
 
   useEffect(() => {
@@ -66,11 +69,11 @@ export default function App() {
           <Explorer />
         </aside>
         <main className="flex min-w-0 flex-col overflow-hidden bg-paper">
-          <div className="flex h-10 items-center gap-1 px-2.5">
+          <div className="flex h-10 items-center gap-1 overflow-x-auto px-2.5">
             <button
               onClick={showQuery}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium transition-colors",
+                "flex shrink-0 items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium transition-colors",
                 mainView.kind === "query"
                   ? "bg-ink/[0.06] text-ink"
                   : "text-muted hover:bg-ink/[0.04] hover:text-ink",
@@ -78,21 +81,41 @@ export default function App() {
             >
               <Code2 className="h-3.5 w-3.5" /> Query
             </button>
-            {mainView.kind === "data" && (
-              <span className="flex items-center gap-1.5 bg-ink/[0.06] px-2.5 py-1 text-[12px] font-medium text-ink">
-                <Table2 className="h-3.5 w-3.5" />
-                <span className="font-mono text-[11px]">
-                  {mainView.schema}.{mainView.table}
-                </span>
-                <button
-                  onClick={showQuery}
-                  className="ml-0.5 text-muted hover:text-ink"
-                  title="Close table"
+            {openTabs.map((tab) => {
+              const active =
+                mainView.kind === "data" &&
+                mainView.schema === tab.schema &&
+                mainView.table === tab.table;
+              return (
+                <span
+                  key={`${tab.schema}.${tab.table}`}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium transition-colors",
+                    active
+                      ? "bg-ink/[0.06] text-ink"
+                      : "text-muted hover:bg-ink/[0.04] hover:text-ink",
+                  )}
                 >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
+                  <button
+                    onClick={() => openTable(tab.schema, tab.table)}
+                    className="flex items-center gap-1.5"
+                    title={`${tab.schema}.${tab.table}`}
+                  >
+                    <Table2 className="h-3.5 w-3.5" />
+                    <span className="font-mono text-[11px]">
+                      {tab.schema}.{tab.table}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => closeTable(tab.schema, tab.table)}
+                    className="ml-0.5 text-muted hover:text-ink"
+                    title="Close tab"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              );
+            })}
           </div>
           <div className="flex-1 overflow-hidden border-t border-ink/[0.07]">
             {mainView.kind === "data" ? (
