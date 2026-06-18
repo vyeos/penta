@@ -31,7 +31,11 @@ export function pentaEditorTheme(dark: boolean) {
       },
       ".cm-activeLine": { backgroundColor: "rgb(var(--ink) / 0.035)" },
       ".cm-activeLineGutter": { backgroundColor: "transparent", color: "rgb(var(--muted))" },
-      ".cm-lineNumbers .cm-gutterElement": { padding: "0 12px 0 8px" },
+      // Reserve room for 3 digits (border-box, so min-width spans padding + glyphs)
+      // so the gutter width is stable from line 1..999 and the editor never shifts
+      // as the line count crosses 9→10→100. Right-aligned, so the extra space fills
+      // on the left and the gutter's right edge stays fixed against the code.
+      ".cm-lineNumbers .cm-gutterElement": { padding: "0 12px 0 8px", minWidth: "48px" },
       ".cm-tooltip": {
         backgroundColor: "rgb(var(--paper))",
         border: "1px solid rgb(var(--ink) / 0.1)",
